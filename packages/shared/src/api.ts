@@ -25,6 +25,8 @@ export const ScenarioInfo = z.object({
   letter: z.string(),
   title: z.string(),
   pitch: z.string(),
+  /** The natural-language request the operator "sends" for this scenario. */
+  request: z.string(),
   expected: z.string(),
   followUp: z.string().nullable(),
 });

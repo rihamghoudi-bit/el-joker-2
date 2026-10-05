@@ -67,7 +67,7 @@ export class MissionService {
   /* Public API                                                          */
   /* ------------------------------------------------------------------ */
 
-  async createMission(req: CreateMissionRequest, scenarioId: string | null = null): Promise<{ missionId: string; status: Mission["status"]; missingFields: string[] }> {
+  async createMission(req: CreateMissionRequest, scenarioId: string | null = null, requestText: string | null = null): Promise<{ missionId: string; status: Mission["status"]; missingFields: string[] }> {
     const { store, ai } = this.deps;
     const plan = await planMission(req, ai);
     const missionId = newId("msn");
@@ -90,12 +90,12 @@ export class MissionService {
     };
     store.insertMission(mission, plan.missingFields);
     // The operator's request opens the conversation, exactly as it was sent.
-    const requestText = req.text ?? `${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")} for ${mission.beneficiaries.toLocaleString("en-US")} people in ${mission.location}.`;
-    postFeed(store, missionId, "OPERATOR", "status", requestText, ["REQUEST SENT"], { request: true });
+    const sentText = requestText ?? req.text ?? `${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")} for ${mission.beneficiaries.toLocaleString("en-US")} people in ${mission.location}.`;
+    postFeed(store, missionId, "OPERATOR", "status", sentText, ["REQUEST SENT"], { request: true });
     this.recordRun({ missionId, agent: "LEM3ALEM", mode: plan.mode, status: plan.status === "CREATED" ? "DONE" : "BLOCKED", input: req, summary: plan.status === "CREATED" ? `Mission created: ${mission.beneficiaries} people, ${mission.location}, $${mission.maximumBudget}` : `Needs information: ${plan.missingFields.join(", ")}`, model: plan.model, fallbackReason: plan.fallbackReason, latencyMs: plan.latencyMs });
 
     if (plan.status === "NEEDS_INFORMATION") {
-      postFeed(store, missionId, "LEM3ALEM", "alert", `Chwaya ma3loumet nak9sin — I won't guess critical facts. Missing: ${plan.missingFields.join(", ")}.`, ["NEEDS INFORMATION", modeChip(plan.mode, plan.model)], { missingFields: plan.missingFields, notes: plan.notes });
+      postFeed(store, missionId, "LEM3ALEM", "alert", `Some information is missing, and I won't guess critical facts. Missing: ${plan.missingFields.join(", ")}.`, ["NEEDS INFORMATION", modeChip(plan.mode, plan.model)], { missingFields: plan.missingFields, notes: plan.notes });
       return { missionId, status: mission.status, missingFields: plan.missingFields };
     }
 
@@ -119,7 +119,7 @@ export class MissionService {
         planner: { mode: plan.mode, model: plan.model },
       },
     });
-    postFeed(store, missionId, "LEM3ALEM", "status", `Yalla ya jma3a! New mission: ${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")}, ${mission.beneficiaries.toLocaleString("en-US")} people, ${mission.location}.`, ["MISSION CREATED", modeChip(plan.mode, plan.model)], { notes: plan.notes });
+    postFeed(store, missionId, "LEM3ALEM", "status", `Team, we have a new mission: ${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")}, ${mission.beneficiaries.toLocaleString("en-US")} people, ${mission.location}.`, ["MISSION CREATED", modeChip(plan.mode, plan.model)], { notes: plan.notes });
 
     this.startPipeline(missionId);
     return { missionId, status: mission.status, missingFields: [] };
@@ -128,7 +128,7 @@ export class MissionService {
   async runScenario(id: string): Promise<{ missionId: string }> {
     const sc = getScenario(id);
     if (!sc) throw new DomainError("UNKNOWN_SCENARIO", `Unknown scenario ${id}`, 404);
-    const res = await this.createMission({ mission: sc.draft() }, sc.id);
+    const res = await this.createMission({ mission: sc.draft() }, sc.id, sc.request);
     return { missionId: res.missionId };
   }
 
@@ -192,7 +192,7 @@ export class MissionService {
       if (!already) {
         proofs.recordEvent({ missionId, eventType: "TAMPER_DETECTED", agent: "NASNES", summary: `Tampering detected in ${tamperedIds.length} event(s)`, payload: { tamperedEventIds: tamperedIds, tamperedEventTypes: report.events.filter((e) => e.status === "TAMPERED").map((e) => e.eventType), verifiedAt: report.verifiedAt, ledgerMode: report.ledgerMode } });
       }
-      postFeed(store, missionId, "NASNES", "alert", `Chkoun bdel l'historique?! ${report.summary}. The local record no longer matches the Hedera proof.`, ["TAMPERING DETECTED"]);
+      postFeed(store, missionId, "NASNES", "alert", `Someone changed the history! ${report.summary}. The local record no longer matches the Hedera proof.`, ["TAMPERING DETECTED"]);
     } else if (report.overall === "VALID") {
       postFeed(store, missionId, "NASNES", "proof", report.ledgerMode === "LIVE_TESTNET" ? `Proof verified: ${report.summary}.` : `Local chain verified against the SIMULATED ledger (no Hedera credentials): ${report.summary}.`, [report.ledgerMode === "LIVE_TESTNET" ? "PROOF VERIFIED" : "PROOF VERIFIED · SIMULATED"]);
     }
@@ -264,7 +264,7 @@ export class MissionService {
     store.setMissionStatus(missionId, "RESEARCHING");
     this.currentAgent.set(missionId, "LEMHAF");
     const mission = this.mustGet(missionId);
-    postFeed(store, missionId, "LEMHAF", "working", this.deps.ai.available ? `Nlawej... asking Claude to rank supplier offers for ${mission.location}.` : "Nlawej... ranking offers with the rule-based fallback (Claude not configured).", ["AI ANALYZING"]);
+    postFeed(store, missionId, "LEMHAF", "working", this.deps.ai.available ? `Searching… asking Claude to rank supplier offers for ${mission.location}.` : "Searching… ranking offers with the rule-based fallback (Claude not configured).", ["AI ANALYZING"]);
     await this.pause();
     const offers = quoteOffers(mission);
     for (const o of offers) store.insertOffer(o);
@@ -300,7 +300,7 @@ export class MissionService {
         dataSource: "DEMO_DATA marketplace (fictional suppliers)",
       },
     });
-    postFeed(store, missionId, "LEMHAF", "result", `Lgit ${offers.length} offers. My pick: ${topSupplier.name} — $${top.totalPrice.toLocaleString("en-US")}, ${top.deliveryTimeHours}h delivery. ${lem.recommendation.summary}`, ["RECOMMENDATION", modeChip(lem.mode, lem.model), "DEMO DATA"], {
+    postFeed(store, missionId, "LEMHAF", "result", `I found ${offers.length} offers. My pick: ${topSupplier.name} — $${top.totalPrice.toLocaleString("en-US")}, ${top.deliveryTimeHours}h delivery. ${lem.recommendation.summary}`, ["RECOMMENDATION", modeChip(lem.mode, lem.model), "DEMO DATA"], {
       recommendation: lem.recommendation,
       fallbackReason: lem.fallbackReason,
     });
@@ -309,7 +309,7 @@ export class MissionService {
     /* ---------- NASNES ---------- */
     store.setMissionStatus(missionId, "VERIFYING");
     this.currentAgent.set(missionId, "NASNES");
-    postFeed(store, missionId, "NASNES", "working", `Chouf... checking ${topSupplier.name} against the registry, the evidence and LEMHAF's claims.`, ["VERIFYING"]);
+    postFeed(store, missionId, "NASNES", "working", `Checking ${topSupplier.name} against the registry, the evidence and LEMHAF's claims.`, ["VERIFYING"]);
     await this.pause();
     const supplierRecord = store.getSupplier(top.supplierId);
     const verification = verifyRecommendation({
@@ -335,7 +335,7 @@ export class MissionService {
       missionId,
       "NASNES",
       verification.status === "VERIFIED" ? "success" : "alert",
-      verification.status === "VERIFIED" ? `Mrigel. ${topSupplier.name} checks out: registry, region, items, arithmetic and evidence all verified.` : `Stop! ${verification.status}: ${verification.reasons.slice(0, 3).join(" · ")}`,
+      verification.status === "VERIFIED" ? `All good. ${topSupplier.name} checks out: registry, region, items, arithmetic and evidence all verified.` : `Stop! ${verification.status}: ${verification.reasons.slice(0, 3).join(" · ")}`,
       [verification.status === "VERIFIED" ? "VERIFIED" : verification.status === "REJECTED" ? "REJECTED" : "NEEDS REVIEW", "DETERMINISTIC"],
       { verification },
     );
@@ -346,7 +346,7 @@ export class MissionService {
     const decision = await this.runGuardian(missionId);
     if (decision.decision === "BLOCKED") {
       store.setMissionStatus(missionId, "BLOCKED");
-      postFeed(store, missionId, "KANAWITA", "status", "Ma n7arrek 7atta millime. Guardian said no, so I stay idle — no payment.", ["NO PAYMENT"]);
+      postFeed(store, missionId, "KANAWITA", "status", "I won't move a single cent. The Guardian said no, so no payment.", ["NO PAYMENT"]);
       this.currentAgent.set(missionId, null);
       return;
     }
@@ -365,7 +365,7 @@ export class MissionService {
   private async runGuardian(missionId: string): Promise<GuardianDecision> {
     const { store, policy, config, proofs } = this.deps;
     this.currentAgent.set(missionId, "3ASES");
-    postFeed(store, missionId, "3ASES", "working", "Qanoun howa qanoun. Applying policy " + policy.effectiveVersion + " — deterministic rules, no AI.", ["EVALUATING"]);
+    postFeed(store, missionId, "3ASES", "working", "Rules are rules. Applying policy " + policy.effectiveVersion + " — deterministic rules, no AI.", ["EVALUATING"]);
     await this.pause();
     const snap = buildGuardianSnapshot(store, missionId, this.deps.ledger.payeeAccountId);
     const result = evaluate(snap.input, policy, approvalEvidence(store, missionId, config.operators));
@@ -397,10 +397,10 @@ export class MissionService {
     });
     const text =
       decision.decision === "APPROVED"
-        ? `Kol chay mrigel. APPROVED — risk ${decision.riskLevel}. All ${decision.checks.length} policy checks passed${decision.approvalId ? " (with human approval)" : ""}.`
+        ? `Everything checks out. APPROVED — risk ${decision.riskLevel}. All ${decision.checks.length} policy checks passed${decision.approvalId ? " (with human approval)" : ""}.`
         : decision.decision === "BLOCKED"
           ? `Stop! BLOCKED — ${decision.reasons.slice(0, 2).join(" · ")}`
-          : `Hadha kbir 3liya. HUMAN REVIEW REQUIRED — ${decision.reasons.slice(0, 2).join(" · ")}`;
+          : `This is above my autonomous limit. HUMAN REVIEW REQUIRED — ${decision.reasons.slice(0, 2).join(" · ")}`;
     postFeed(store, missionId, "3ASES", decision.decision === "APPROVED" ? "success" : "alert", text, [decision.decision === "HUMAN_REVIEW_REQUIRED" ? "HUMAN REVIEW" : decision.decision, `RISK ${decision.riskLevel}`, "NO LLM"], { decision });
     return decision;
   }

@@ -24,13 +24,13 @@ function Kpi({ label, value, sub, tone = "neutral" }: { label: string; value: Re
     <div className="glass relative overflow-hidden rounded-3xl px-5 py-5">
       <span className={cx("absolute inset-x-0 top-0 h-1", BAR[tone])} />
       <div className="text-[11px] font-semibold tracking-[0.16em] text-ink-400 uppercase">{label}</div>
-      <div className={cx("mt-2 font-display text-2xl leading-tight font-bold xl:text-[28px]", TONE[tone])}>{value}</div>
+      <div className={cx("mt-2 font-display text-2xl leading-tight font-bold", TONE[tone])}>{value}</div>
       {sub && <div className="mt-1.5 text-[13px] leading-snug text-ink-400">{sub}</div>}
     </div>
   );
 }
 
-export function KpiStrip({ state }: { state: MissionState }) {
+export function KpiStrip({ state, className }: { state: MissionState; className?: string }) {
   const { mission, guardianDecision: g, verification } = state;
   const offer = state.offers.find((o) => o.offerId === state.recommendation?.recommendedOfferId) ?? null;
   const supplier = offer ? state.suppliers.find((s) => s.supplierId === offer.supplierId) : null;
@@ -50,7 +50,7 @@ export function KpiStrip({ state }: { state: MissionState }) {
   const proofTone: Tone = lv?.overall === "TAMPERING_DETECTED" ? "bad" : lv?.overall === "VALID" ? "good" : pending ? "busy" : anchored ? "good" : "neutral";
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+    <div className={className ?? "grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6"}>
       <Kpi label="Budget" value={usd(mission.maximumBudget)} sub={`${mission.beneficiaries.toLocaleString("en-US")} people · ${mission.location}`} />
       <Kpi
         label="Best offer"

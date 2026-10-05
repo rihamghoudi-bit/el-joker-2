@@ -1,6 +1,6 @@
 "use client";
 import type { FeedMessage, GuardianDecision, MissionState, Recommendation, VerificationResult } from "@eljoker/shared";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { AGENTS } from "@/lib/agents";
 import { cx, time, usd } from "@/lib/format";
 import { Avatar, Chip, ExtLink } from "./ui";
@@ -80,14 +80,14 @@ function Details({ msg, state }: { msg: FeedMessage; state: MissionState }) {
   return null;
 }
 
-export function ChatFeed({ state }: { state: MissionState }) {
+export function ChatFeed({ state, footer }: { state: MissionState; footer?: ReactNode }) {
   const box = useRef<HTMLDivElement>(null);
   const count = state.feed.length;
   useEffect(() => {
     // Scroll only the chat pane (never the page) to the newest message.
     const el = box.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [count, state.currentAgent]);
+  }, [count, state.currentAgent, state.mission.status]);
 
   return (
     <div ref={box} className="scroll-thin h-full overflow-y-auto">
@@ -151,6 +151,7 @@ export function ChatFeed({ state }: { state: MissionState }) {
             </span>
           </div>
         )}
+        {footer}
         {state.mission.status === "PAID" && state.payments[0] && (
           <p className="text-center text-xs text-ink-400">Settlement is a scaled demo amount ({state.payments[0].settlementAmount} ℏ) representing the {usd(state.payments[0].amount)} offer.</p>
         )}

@@ -158,7 +158,7 @@ export class Kanawita {
           missionId,
           "KANAWITA",
           "success",
-          ledger.mode === "LIVE_TESTNET" ? `Flous mchet ✅ ${settlement} ℏ confirmed on Hedera testnet. Receipt: SUCCESS.` : `Settlement SIMULATED (no Hedera credentials configured) — no funds moved.`,
+          ledger.mode === "LIVE_TESTNET" ? `Payment sent ✅ ${settlement} ℏ confirmed on Hedera testnet. Receipt: SUCCESS.` : `Settlement SIMULATED (no Hedera credentials configured) — no funds moved.`,
           [ledger.mode === "LIVE_TESTNET" ? "PAID" : "PAID · SIMULATED"],
           { paymentId: payment.paymentId, hashscanUrl: payment.hashscanUrl, transactionId: txId },
         );
@@ -201,7 +201,7 @@ export class Kanawita {
       missionId,
       "KANAWITA",
       "alert",
-      trigger === "REPLAY" ? "La la! Same payment twice? Rejected. 🛑" : "I cannot pay: authorization requirements are not met.",
+      trigger === "REPLAY" ? "The same payment twice? Rejected. 🛑" : "I cannot pay: authorization requirements are not met.",
       [trigger === "REPLAY" ? "DUPLICATE BLOCKED" : "PAYMENT REFUSED"],
       { reasons },
     );

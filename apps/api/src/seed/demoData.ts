@@ -137,6 +137,7 @@ export interface ScenarioDefinition extends ScenarioInfo {
 export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "A_APPROVED",
+    request: "500 people in Gabès need drinking water and essential medicine after a water network failure. Budget: $5,000. Delivery within 48 hours to the civil-protection warehouse.",
     letter: "A",
     title: "Approved mission",
     pitch: "500 people in Gabès need water and essential medicine. Budget $5,000.",
@@ -156,6 +157,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "B_BUDGET_BLOCK",
+    request: "500 people in Gabès need drinking water and essential medicine. We only have $100 available. Delivery within 48 hours.",
     letter: "B",
     title: "Budget block",
     pitch: "Same Gabès mission, but only $100 available.",
@@ -175,6 +177,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "C_DUPLICATE_PAYMENT",
+    request: "500 people in Gabès need drinking water and essential medicine. Budget: $5,000. Delivery within 48 hours.",
     letter: "C",
     title: "Duplicate payment attack",
     pitch: "Pay once, then replay exactly the same payment.",
@@ -194,6 +197,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "D_UNVERIFIED_SUPPLIER",
+    request: "Rush: 500 people in Gabès need drinking water and essential medicine within 12 hours. Budget: $5,000.",
     letter: "D",
     title: "Unverified supplier",
     pitch: "Rush order: delivery within 12 hours. Only a cheap, unknown broker can make it.",
@@ -213,6 +217,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "E_HUMAN_REVIEW",
+    request: "2,000 displaced people in Médenine need drinking water and essential medicine. Budget: $20,000. Delivery within 72 hours.",
     letter: "E",
     title: "High-risk human review",
     pitch: "2,000 displaced people in Médenine. Budget $20,000 — above the autonomous limit.",
@@ -236,6 +241,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "F_TAMPERING",
+    request: "500 people in Gabès need drinking water and essential medicine. Budget: $5,000. Delivery within 48 hours. (audit integrity drill)",
     letter: "F",
     title: "Tampering detection",
     pitch: "Create real evidence and Hedera proofs, then edit the local history.",

@@ -21,7 +21,16 @@ const SLABS = [
   { x: 84, y: 26, w: 300, h: 80, z: 70, d: -10 },
 ];
 
-export function Backdrop() {
+const MASCOTS = [
+  { src: "/agents/lem3alem.webp", name: "Lem3alem", left: "9%", top: "20%", size: 120, dur: "9s", delay: "0s", color: "#f5b700" },
+  { src: "/agents/lemhaf.webp", name: "Lemhaf", left: "80%", top: "16%", size: 110, dur: "11s", delay: "-3s", color: "#a78bfa" },
+  { src: "/agents/nasnes.webp", name: "Nasnes", left: "14%", top: "66%", size: 104, dur: "10s", delay: "-6s", color: "#2dd4bf" },
+  { src: "/agents/3ases.webp", name: "3ases", left: "77%", top: "62%", size: 124, dur: "12s", delay: "-2s", color: "#e70013" },
+  { src: "/agents/kanawita.webp", name: "Kanawita", left: "46%", top: "80%", size: 96, dur: "10.5s", delay: "-5s", color: "#22c55e" },
+  { src: "/agents/hedera.png", name: "Hedera", left: "60%", top: "6%", size: 64, dur: "13s", delay: "-8s", color: "#8b80ff" },
+];
+
+export function Backdrop({ mascots = false }: { mascots?: boolean }) {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-black" aria-hidden>
       <div className="slab-stage absolute inset-0">
@@ -39,6 +48,21 @@ export function Backdrop() {
       </div>
       {/* keep content readable */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(0,0,0,0.25),rgba(0,0,0,0.75))]" />
+      {mascots &&
+        MASCOTS.map((m) => (
+          <div key={m.name} className="mascot absolute" style={{ left: m.left, top: m.top, animationDuration: m.dur, animationDelay: m.delay }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={m.src}
+              alt=""
+              width={m.size}
+              height={m.size}
+              className="rounded-full ring-2"
+              style={{ ["--tw-ring-color" as string]: m.color, boxShadow: `0 0 50px -8px ${m.color}` }}
+              draggable={false}
+            />
+          </div>
+        ))}
     </div>
   );
 }

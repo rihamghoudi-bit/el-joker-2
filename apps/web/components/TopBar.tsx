@@ -19,7 +19,7 @@ export function TopBar(props: {
   const live = config?.hedera.mode === "LIVE_TESTNET";
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-black/60 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-8 gap-y-3 px-6 py-4 lg:px-10">
+      <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-8 gap-y-3 px-5 py-3.5">
         <button type="button" onClick={props.onNew} className="flex items-center gap-3 text-left">
           <div className="relative grid h-11 w-8 place-items-center rounded-md bg-ink-100 text-ink-950 shadow-[0_0_0_2px_#5b4bff,0_6px_24px_-4px_#5b4bff]">
             <span className="absolute top-0.5 left-1 text-[8px] font-bold text-tn-red">J</span>

@@ -93,8 +93,18 @@ html, body {
   0%, 100% { transform: translateZ(var(--z)); }
   50% { transform: translateZ(calc(var(--z) + 40px)); }
 }
+.mascot {
+  animation-name: mascot-float;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  opacity: 0.9;
+}
+@keyframes mascot-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-4deg); }
+  50% { transform: translate3d(10px, -26px, 0) rotate(5deg); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .slab, .slab-plane { animation: none; }
+  .slab, .slab-plane, .mascot { animation: none; }
 }
 
 .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-ink-600) transparent; }
