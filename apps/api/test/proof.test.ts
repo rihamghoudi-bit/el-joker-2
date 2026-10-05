@@ -81,9 +81,10 @@ describe("Mirror Node client", () => {
   it("verification reports PENDING (not VALID) when the Mirror Node is unreachable", async () => {
     const app = await makeTestApp();
     const { missionId } = await runScenarioToRest(app, "B_BUDGET_BLOCK");
-    (app.ledger as unknown as { fetchTopicMessage: () => Promise<never> }).fetchTopicMessage = async () => {
+    const down = async () => {
       throw new Error("ECONNREFUSED");
     };
+    Object.assign(app.ledger, { fetchTopicMessage: down, listTopicMessages: down });
     const report = await app.missions.verifyMission(missionId);
     expect(report.overall).toBe("PENDING");
     expect(report.events[0]!.problems.join(" ")).toMatch(/ECONNREFUSED/);

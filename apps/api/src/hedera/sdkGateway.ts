@@ -125,6 +125,10 @@ export class HederaSdkGateway implements LedgerGateway {
     return this.mirror.getTopicMessage(this.topicId, sequenceNumber);
   }
 
+  async listTopicMessages(sinceIso: string | null): Promise<LedgerMessage[]> {
+    return this.mirror.listTopicMessages(this.topicId, sinceIso);
+  }
+
   async fetchTransaction(transactionId: string): Promise<LedgerTransaction | null> {
     return this.mirror.getTransaction(transactionId);
   }

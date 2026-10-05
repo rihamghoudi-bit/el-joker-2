@@ -28,7 +28,7 @@ export function quoteOffers(mission: Mission, suppliers: DemoSupplier[] = DEMO_S
     if (items.length === 0) continue;
     const totalPrice = round2(items.reduce((a, i) => a + i.lineTotal, 0));
     const offerId = newId("off");
-    const invoiceId = `INV-${s.invoicePrefix}-${mission.missionId.slice(-8).toUpperCase()}`;
+    const invoiceId = s.fixedInvoiceId ?? `INV-${s.invoicePrefix}-${mission.missionId.slice(-8).toUpperCase()}`;
     const quote = { supplierId: s.supplierId, missionId: mission.missionId, items, totalPrice };
     const evidence: EvidenceDocument[] = [{ type: "QUOTE", reference: `QUOTE-${s.invoicePrefix}-${offerId.slice(-6)}`, sha256: hashCanonical(quote) }];
     if (s.hasLicenseEvidence) evidence.push({ type: "LICENSE", reference: `${s.verificationSource ?? "license"}`, sha256: hashCanonical({ license: s.supplierId }) });

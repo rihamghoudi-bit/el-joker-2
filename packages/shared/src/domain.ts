@@ -371,12 +371,27 @@ export const EventVerification = z.object({
 });
 export type EventVerification = z.infer<typeof EventVerification>;
 
+/** A proof that exists on the ledger but whose local record is gone (deleted history). */
+export const MissingLocalEvent = z.object({
+  eventId: z.string(),
+  eventType: z.string(),
+  sequence: z.number().nullable(),
+  ledgerSequenceNumber: z.number().nullable(),
+  consensusTimestamp: z.string().nullable(),
+  hashscanUrl: z.string().nullable(),
+});
+export type MissingLocalEvent = z.infer<typeof MissingLocalEvent>;
+
 export const TrailVerification = z.object({
   missionId: z.string(),
   verifiedAt: z.string(),
   overall: z.enum(["VALID", "TAMPERING_DETECTED", "PENDING", "UNVERIFIABLE"]),
   ledgerMode: LedgerMode,
   events: z.array(EventVerification),
+  /** Ledger proofs for this mission with no matching local event (history deleted locally). */
+  missingLocalEvents: z.array(MissingLocalEvent),
+  /** How many proofs for this mission the ledger returned (null if the listing failed). */
+  ledgerEventCount: z.number().nullable(),
   summary: z.string(),
 });
 export type TrailVerification = z.infer<typeof TrailVerification>;

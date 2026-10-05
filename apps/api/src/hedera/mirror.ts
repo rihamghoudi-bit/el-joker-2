@@ -44,6 +44,26 @@ export class MirrorNodeClient {
     };
   }
 
+  /** Paginated listing of a topic's messages (oldest first), optionally from a consensus time. */
+  async listTopicMessages(topicId: string, sinceIso: string | null, maxPages = 30): Promise<LedgerMessage[]> {
+    const since = sinceIso ? `&timestamp=gte:${(new Date(sinceIso).getTime() / 1000).toFixed(9)}` : "";
+    let path: string | null = `/api/v1/topics/${topicId}/messages?limit=100&order=asc${since}`;
+    const out: LedgerMessage[] = [];
+    for (let page = 0; path && page < maxPages; page++) {
+      const body = (await this.getJson(path)) as {
+        messages?: { message?: string; consensus_timestamp?: string; sequence_number?: number; topic_id?: string }[];
+        links?: { next?: string | null };
+      } | null;
+      if (!body) break;
+      for (const m of body.messages ?? []) {
+        if (typeof m.message !== "string" || m.sequence_number == null) continue;
+        out.push({ source: "MIRROR_NODE", topicId: m.topic_id ?? topicId, sequenceNumber: m.sequence_number, consensusTimestamp: m.consensus_timestamp ?? null, message: Buffer.from(m.message, "base64").toString("utf8") });
+      }
+      path = body.links?.next ?? null;
+    }
+    return out;
+  }
+
   async getTransaction(transactionId: string): Promise<LedgerTransaction | null> {
     const body = (await this.getJson(`/api/v1/transactions/${toMirrorTxId(transactionId)}`)) as
       | { transactions?: { result?: string; consensus_timestamp?: string; transaction_id?: string }[] }

@@ -14,6 +14,8 @@ export interface DemoSupplier extends Supplier {
   bidsOnlyOnRush: boolean;
   hasLicenseEvidence: boolean;
   invoicePrefix: string;
+  /** A supplier that reuses the same invoice number on every quote (fraud pattern for scenario G). */
+  fixedInvoiceId?: string;
 }
 
 export const DEMO_SUPPLIERS: DemoSupplier[] = [
@@ -84,6 +86,41 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     bidsOnlyOnRush: true,
     hasLicenseEvidence: false,
     invoicePrefix: "SXT",
+  },
+  {
+    supplierId: "SUP-KAIROUAN",
+    name: "Kairouan Quick Supply (demo)",
+    region: "Kairouan",
+    serviceRegions: ["Kairouan", "Sidi Bouzid"],
+    categories: ["WATER", "MEDICINE", "FOOD"],
+    verified: true,
+    verificationSource: "Simulated procurement registry · entry DPR-0311",
+    riskFlags: [],
+    claims: ["Same-day dispatch in central Tunisia"],
+    isDemo: true,
+    priceList: { water_bottle: 0.45, medicine_kit: 43, ors: 0.56, food_parcel: 24 },
+    deliveryHours: 24,
+    bidsOnlyOnRush: false,
+    hasLicenseEvidence: true,
+    invoicePrefix: "KQS",
+    fixedInvoiceId: "INV-KQS-2026-0042",
+  },
+];
+
+/** Demo history: invoice INV-KQS-2026-0042 was already used by an earlier (fictional) mission in September. */
+export const HISTORICAL_OFFERS = [
+  {
+    offerId: "off_demo_history_kqs_0042",
+    supplierId: "SUP-KAIROUAN",
+    missionId: "demo-history-2026-09",
+    items: [{ category: "WATER" as const, name: "Bottled drinking water 1.5L", quantity: 2000, unitPrice: 0.45, lineTotal: 900 }],
+    totalPrice: 900,
+    currency: "USD" as const,
+    deliveryTimeHours: 24,
+    invoiceId: "INV-KQS-2026-0042",
+    evidence: [],
+    createdAt: "2026-09-14T09:00:00.000Z",
+    isDemo: true,
   },
 ];
 
@@ -246,13 +283,37 @@ export const SCENARIOS: ScenarioDefinition[] = [
     title: "Tampering detection",
     pitch: "Create real evidence and Hedera proofs, then edit the local history.",
     expected: "Verification recomputes hashes → local record ≠ Hedera proof → TAMPERING DETECTED.",
-    followUp: "Open “Proof & Verify”, press “Simulate local tampering”, then “Verify against Hedera”.",
+    followUp: "Open “Proof & verify”, then: Verify → Simulate local tampering (or Insider rewrites hashes / Delete last event) → Verify again.",
     draft: () => ({
       description: "Emergency water and essential medicine for 500 people in Gabès (audit integrity drill).",
       location: "Gabès",
       beneficiaries: 500,
       requestedItems: GABES_ITEMS,
       maximumBudget: 5000,
+      currency: "USD",
+      deadline: hoursFromNow(48),
+      urgency: "HIGH",
+      constraints: [],
+    }),
+  },
+  {
+    id: "G_RECYCLED_INVOICE",
+    request: "400 people in Kairouan need drinking water and essential medicine after flash floods. Budget: $4,500. Delivery within 48 hours.",
+    letter: "G",
+    title: "Recycled invoice",
+    pitch: "A verified, cheap supplier in Kairouan — but its invoice number was already used.",
+    expected: "LEMHAF picks the cheapest offer → NASNES finds the invoice was already used by an earlier mission → REJECTED → 3ASES BLOCKED.",
+    followUp: null,
+    draft: () => ({
+      description: "Water and essential medicine for 400 people in Kairouan after flash floods.",
+      location: "Kairouan",
+      beneficiaries: 400,
+      requestedItems: [
+        { category: "WATER", name: "Bottled drinking water 1.5L", quantity: 2400, unit: "bottle" },
+        { category: "MEDICINE", name: "Essential medicine kit", quantity: 40, unit: "kit" },
+        { category: "MEDICINE", name: "Oral rehydration salts (ORS)", quantity: 800, unit: "sachet" },
+      ],
+      maximumBudget: 4500,
       currency: "USD",
       deadline: hoursFromNow(48),
       urgency: "HIGH",

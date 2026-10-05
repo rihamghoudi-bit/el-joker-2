@@ -40,6 +40,10 @@ export class SimulatedGateway implements LedgerGateway {
     return { source: "SIMULATED_LEDGER", topicId: row.topicId, sequenceNumber, consensusTimestamp: row.consensusTimestamp, message: row.message };
   }
 
+  async listTopicMessages(sinceIso: string | null): Promise<LedgerMessage[]> {
+    return this.store.listSimulatedMessages(sinceIso).map((r) => ({ source: "SIMULATED_LEDGER" as const, topicId: r.topicId, sequenceNumber: r.sequenceNumber, consensusTimestamp: r.consensusTimestamp, message: r.message }));
+  }
+
   async fetchTransaction(_transactionId: string): Promise<LedgerTransaction | null> {
     return null;
   }

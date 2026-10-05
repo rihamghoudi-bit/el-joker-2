@@ -1,4 +1,4 @@
-import type { AgentName, AnchorInfo, AuditEvent, AuditEventType, EventVerification, TrailVerification } from "@eljoker/shared";
+import type { AgentName, AnchorInfo, AuditEvent, AuditEventType, EventVerification, MissingLocalEvent, TrailVerification } from "@eljoker/shared";
 import type { Store } from "../db/store";
 import type { LedgerGateway, LedgerMessage } from "../hedera/gateway";
 import { canonicalize, hashCanonical, newId, nowIso, sha256Hex, sleep } from "../lib/canonical";
@@ -76,7 +76,7 @@ export interface RecordEventInput {
   payload: Record<string, unknown>;
 }
 
-export type TamperMode = "EDIT_EVIDENCE" | "REWRITE_HASHES";
+export type TamperMode = "EDIT_EVIDENCE" | "REWRITE_HASHES" | "DELETE_LAST_EVENT";
 
 /**
  * HederaProofService: builds the hash-linked audit chain locally and anchors every event to HCS.
@@ -203,8 +203,12 @@ export class ProofService {
     return { msg: null, error: lastErr };
   }
 
-  /** Verify one event: local integrity + chain link + independent ledger read-back. */
-  async verifyProof(event: AuditEvent, expectedPrevious: string): Promise<EventVerification> {
+  /**
+   * Verify one event: local integrity + chain link + independent ledger read-back.
+   * `hint` is the ledger message found for this eventId in the topic listing (preferred over the local anchor metadata,
+   * which an insider could also edit).
+   */
+  async verifyProof(event: AuditEvent, expectedPrevious: string, hint: LedgerMessage | null = null): Promise<EventVerification> {
     const raw = this.store.getRawPayload(event.eventId) ?? "{}";
     let recomputedEvidenceHash: string;
     try {
@@ -245,65 +249,131 @@ export class ProofService {
     let matchesLedger: boolean | null = null;
     let status: EventVerification["status"];
 
-    if (event.anchor.sequenceNumber == null) {
-      status = event.anchor.status === "PENDING" ? "PENDING" : "MISSING_PROOF";
-      problems.push(event.anchor.status === "PENDING" ? "Awaiting Hedera consensus" : `No ledger proof (${event.anchor.error ?? "anchor failed"})`);
-    } else {
-      const { msg, error } = await this.fetchLedger(event.anchor.sequenceNumber);
-      const rec = msg ? parseLedgerMessage(msg.message) : null;
-      if (!msg || !rec) {
+    let msg = hint;
+    let error: string | null = null;
+    if (!msg && event.anchor.sequenceNumber != null) ({ msg, error } = await this.fetchLedger(event.anchor.sequenceNumber));
+    const rec = msg ? parseLedgerMessage(msg.message) : null;
+
+    if (!msg || !rec) {
+      if (event.anchor.sequenceNumber == null) {
+        status = event.anchor.status === "PENDING" ? "PENDING" : "MISSING_PROOF";
+        problems.push(event.anchor.status === "PENDING" ? "Awaiting Hedera consensus" : `No ledger proof (${event.anchor.error ?? "anchor failed"})`);
+      } else {
         status = "PENDING";
         problems.push(error ? `Mirror Node error: ${error}` : "Proof not yet visible on the Mirror Node");
-      } else {
-        ledgerView = {
-          source: msg.source,
-          evidenceHash: rec.h,
-          eventHash: rec.eh,
-          previousEventHash: rec.ph,
-          consensusTimestamp: msg.consensusTimestamp,
+      }
+    } else {
+      ledgerView = {
+        source: msg.source,
+        evidenceHash: rec.h,
+        eventHash: rec.eh,
+        previousEventHash: rec.ph,
+        consensusTimestamp: msg.consensusTimestamp,
+        sequenceNumber: msg.sequenceNumber,
+        topicId: msg.topicId,
+        hashscanUrl: this.ledger.hashscanTransactionUrl(event.anchor.transactionId, msg.source === "MIRROR_NODE" ? msg.consensusTimestamp : null),
+      };
+      // Compare what is on disk NOW against what consensus recorded THEN.
+      matchesLedger = rec.e === event.eventId && rec.h === recomputedEvidenceHash && rec.eh === recomputedEventHash && rec.ph === event.previousEventHash;
+      if (!matchesLedger) problems.push("Local record does not match the Hedera proof");
+      // The local anchor metadata must point at the same consensus message.
+      const anchorMetaOk = event.anchor.sequenceNumber == null || event.anchor.sequenceNumber === msg.sequenceNumber;
+      if (!anchorMetaOk) problems.push(`Local anchor metadata altered (says #${event.anchor.sequenceNumber}, ledger has #${msg.sequenceNumber})`);
+      // Backfill missing anchor metadata (sequence number, consensus timestamp) from the ledger.
+      if (anchorMetaOk && (event.anchor.sequenceNumber == null || (msg.source === "MIRROR_NODE" && msg.consensusTimestamp && !event.anchor.consensusTimestamp))) {
+        this.store.updateAnchor(event.eventId, {
+          ...event.anchor,
+          status: msg.source === "MIRROR_NODE" ? "ANCHORED" : "SIMULATED",
           sequenceNumber: msg.sequenceNumber,
           topicId: msg.topicId,
-          hashscanUrl: this.ledger.hashscanTransactionUrl(event.anchor.transactionId, msg.source === "MIRROR_NODE" ? msg.consensusTimestamp : null),
-        };
-        // Compare what is on disk NOW against what consensus recorded THEN.
-        matchesLedger = rec.e === event.eventId && rec.h === recomputedEvidenceHash && rec.eh === recomputedEventHash && rec.ph === event.previousEventHash;
-        if (!matchesLedger) problems.push("Local record does not match the Hedera proof");
-        // Backfill consensus timestamp for nicer HashScan links.
-        if (msg.source === "MIRROR_NODE" && msg.consensusTimestamp && !event.anchor.consensusTimestamp) {
-          this.store.updateAnchor(event.eventId, { ...event.anchor, consensusTimestamp: msg.consensusTimestamp, hashscanUrl: ledgerView.hashscanUrl });
-        }
-        const allGood = evidenceHashIntact && eventHashIntact && chainLinkValid && matchesLedger;
-        status = allGood ? (msg.source === "SIMULATED_LEDGER" ? "SIMULATED_VALID" : "VALID") : "TAMPERED";
+          consensusTimestamp: msg.consensusTimestamp,
+          hashscanUrl: ledgerView.hashscanUrl,
+          error: null,
+        });
       }
+      const allGood = evidenceHashIntact && eventHashIntact && chainLinkValid && matchesLedger && anchorMetaOk;
+      status = allGood ? (msg.source === "SIMULATED_LEDGER" ? "SIMULATED_VALID" : "VALID") : "TAMPERED";
     }
     if (status !== "TAMPERED" && (!evidenceHashIntact || !eventHashIntact || !chainLinkValid)) status = "TAMPERED";
 
     return { eventId: event.eventId, eventType: event.eventType, sequence: event.sequence, status, local, ledger: ledgerView, checks: { evidenceHashIntact, eventHashIntact, chainLinkValid, matchesLedger }, problems };
   }
 
+  /** Every proof the ledger holds for this mission, keyed by eventId (first occurrence wins). */
+  private async ledgerRecordsFor(missionId: string, sinceIso: string | null): Promise<Map<string, { msg: LedgerMessage; rec: LedgerRecord }>> {
+    const out = new Map<string, { msg: LedgerMessage; rec: LedgerRecord }>();
+    for (const msg of await this.ledger.listTopicMessages(sinceIso)) {
+      const rec = parseLedgerMessage(msg.message);
+      if (rec && rec.m === missionId && !out.has(rec.e)) out.set(rec.e, { msg, rec });
+    }
+    return out;
+  }
+
+  /**
+   * Verify the whole mission trail against the ledger:
+   *  - each local event (integrity, chain link, matching consensus proof)
+   *  - completeness: every proof the ledger holds for this mission must still exist locally (detects deleted history)
+   */
   async verifyMissionTrail(missionId: string): Promise<TrailVerification> {
     await this.idle(missionId);
+    const mission = this.store.getMission(missionId);
     const events = this.store.listAuditEvents(missionId);
+    const since = mission ? new Date(Date.parse(mission.createdAt) - 5 * 60_000).toISOString() : null;
+    const live = this.ledger.mode === "LIVE_TESTNET";
+
+    // List the mission's proofs from the ledger. On testnet the Mirror Node may lag a few seconds: retry until
+    // every locally-anchored event is visible (or attempts run out; per-event lookup then falls back to the sequence number).
+    let byEvent = new Map<string, { msg: LedgerMessage; rec: LedgerRecord }>();
+    let ledgerEventCount: number | null = null;
+    const attempts = live ? (this.opts.mirrorAttempts ?? 6) : 1;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        byEvent = await this.ledgerRecordsFor(missionId, since);
+        ledgerEventCount = byEvent.size;
+        if (!events.some((e) => e.anchor.sequenceNumber != null && !byEvent.has(e.eventId))) break;
+      } catch (e) {
+        logger.warn("proof.listing_failed", { missionId, error: e });
+        ledgerEventCount = null;
+      }
+      if (i < attempts - 1) await sleep(this.opts.mirrorDelayMs ?? 2000);
+    }
+
     const results: EventVerification[] = [];
     let expectedPrev = GENESIS_HASH;
     for (const ev of events) {
-      results.push(await this.verifyProof(ev, expectedPrev));
+      results.push(await this.verifyProof(ev, expectedPrev, byEvent.get(ev.eventId)?.msg ?? null));
       expectedPrev = ev.eventHash;
     }
+
+    const localIds = new Set(events.map((e) => e.eventId));
+    const missingLocalEvents: MissingLocalEvent[] = [...byEvent.values()]
+      .filter(({ rec }) => !localIds.has(rec.e))
+      .map(({ msg, rec }) => ({
+        eventId: rec.e,
+        eventType: rec.t,
+        sequence: typeof rec.s === "number" ? rec.s : null,
+        ledgerSequenceNumber: msg.sequenceNumber,
+        consensusTimestamp: msg.consensusTimestamp,
+        hashscanUrl: msg.source === "MIRROR_NODE" ? this.ledger.hashscanTransactionUrl(null, msg.consensusTimestamp) : null,
+      }));
+
     const tampered = results.filter((r) => r.status === "TAMPERED");
     const pending = results.filter((r) => r.status === "PENDING");
     const missing = results.filter((r) => r.status === "MISSING_PROOF");
-    const overall: TrailVerification["overall"] = tampered.length ? "TAMPERING_DETECTED" : pending.length ? "PENDING" : missing.length ? "UNVERIFIABLE" : "VALID";
-    const src = this.ledger.mode === "LIVE_TESTNET" ? "Hedera testnet (Mirror Node)" : "SIMULATED ledger";
+    const overall: TrailVerification["overall"] = tampered.length || missingLocalEvents.length ? "TAMPERING_DETECTED" : pending.length ? "PENDING" : missing.length ? "UNVERIFIABLE" : "VALID";
+    const src = live ? "Hedera testnet (Mirror Node)" : "SIMULATED ledger";
+    const parts: string[] = [];
+    if (tampered.length) parts.push(`${tampered.length} event(s) no longer match the proof recorded on ${src}: ${tampered.map((t) => t.eventType).join(", ")}`);
+    if (missingLocalEvents.length) parts.push(`${missingLocalEvents.length} event(s) proven on ${src} were deleted locally: ${missingLocalEvents.map((m) => m.eventType).join(", ")}`);
     const summary =
       overall === "TAMPERING_DETECTED"
-        ? `${tampered.length} event(s) no longer match the proof recorded on ${src}: ${tampered.map((t) => t.eventType).join(", ")}`
+        ? parts.join(" · ")
         : overall === "PENDING"
           ? `${pending.length} event(s) still waiting for consensus / Mirror Node indexing`
           : overall === "UNVERIFIABLE"
             ? `${missing.length} event(s) have no ledger proof`
-            : `All ${results.length} events match their proofs on ${src}`;
-    const report: TrailVerification = { missionId, verifiedAt: nowIso(), overall, ledgerMode: this.ledger.mode, events: results, summary };
+            : `All ${results.length} events match their proofs on ${src}, and no proven event is missing locally`;
+    const report: TrailVerification = { missionId, verifiedAt: nowIso(), overall, ledgerMode: this.ledger.mode, events: results, missingLocalEvents, ledgerEventCount, summary };
     this.store.saveTrailVerification(report);
     return report;
   }
@@ -312,9 +382,18 @@ export class ProofService {
    * DEMO/DEVELOPMENT ONLY. Simulates an insider editing historical evidence in the local database.
    * EDIT_EVIDENCE: payload changed, hashes untouched (local check catches it).
    * REWRITE_HASHES: payload changed AND the local hash chain recomputed (only Hedera catches it).
+   * DELETE_LAST_EVENT: the latest event is erased; the remaining chain stays consistent (only the ledger listing catches it).
    */
   tamper(missionId: string, mode: TamperMode): { eventId: string; eventType: AuditEventType; field: string; before: unknown; after: unknown } {
     const events = this.store.listAuditEvents(missionId);
+    if (mode === "DELETE_LAST_EVENT") {
+      // Erase the most recent decision (e.g. the payment record or a blocked attempt) to rewrite what "happened".
+      const last = [...events].reverse().find((e) => e.eventType !== "TAMPER_DETECTED");
+      if (!last) throw new Error("No event available to delete");
+      this.store.deleteAuditEvent(last.eventId);
+      logger.warn("demo.tamper_applied", { missionId, eventType: last.eventType, mode });
+      return { eventId: last.eventId, eventType: last.eventType, field: "(entire event)", before: last.eventType, after: "deleted" };
+    }
     const preferred: AuditEventType[] = ["GUARDIAN_APPROVED", "PAYMENT_CONFIRMED", "AI_RECOMMENDATION", "GUARDIAN_BLOCKED", "MISSION_CREATED"];
     const target = preferred.map((t) => events.find((e) => e.eventType === t)).find(Boolean);
     if (!target) throw new Error("No event available to tamper with");

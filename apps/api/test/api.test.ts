@@ -22,7 +22,7 @@ describe("HTTP API", () => {
   it("lists the six scenarios", async () => {
     svc = await makeTestApp();
     const res = await request(createApp(svc)).get("/api/scenarios");
-    expect(res.body.map((s: { letter: string }) => s.letter)).toEqual(["A", "B", "C", "D", "E", "F"]);
+    expect(res.body.map((s: { letter: string }) => s.letter)).toEqual(["A", "B", "C", "D", "E", "F", "G"]);
   });
 
   it("POST /api/scenarios/:id/run returns immediately with a missionId (202)", async () => {
@@ -62,7 +62,7 @@ describe("HTTP API", () => {
     const app = createApp(svc);
     const { missionId } = await svc.missions.runScenario("E_HUMAN_REVIEW");
     await svc.missions.idle(missionId);
-    const res = await request(app).post(`/api/missions/${missionId}/approvals`).send({ decision: "APPROVED", reason: "trust me please", actorId: "intruder" });
+    const res = await request(app).post(`/api/missions/${missionId}/approvals`).send({ decision: "APPROVED", reason: "trust me please", actorId: "intruder", pin: "0619" });
     expect(res.status).toBe(403);
     expect(svc.store.listPayments(missionId)).toHaveLength(0);
   });

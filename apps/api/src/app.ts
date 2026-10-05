@@ -40,7 +40,7 @@ export function createApp(s: AppServices) {
         mirrorNodeUrl: s.config.hedera.mirrorNodeUrl,
         topicHashscanUrl: s.ledger.hashscanTopicUrl(),
       },
-      payment: { demoSettlementHbar: s.config.hedera.demoSettlementHbar },
+      payment: { hbarPer1000Usd: s.config.hedera.hbarPer1000Usd, maxSettlementHbar: s.config.hedera.maxSettlementHbar },
       policy: {
         version: s.policy.effectiveVersion,
         autonomousLimitUsd: s.policy.autonomousLimitUsd,
@@ -50,6 +50,7 @@ export function createApp(s: AppServices) {
         allowedCategories: s.policy.allowedCategories,
       },
       operators: s.config.operators,
+      operatorAuth: s.config.operatorPin ? "DEMO_PIN" : "DISABLED",
     };
     res.json(body);
   });
@@ -90,7 +91,7 @@ export function createApp(s: AppServices) {
   app.get(
     "/api/missions/:id",
     wrap((req, res) => {
-      res.json(s.missions.getState(String(req.params.id)));
+      res.json(s.missions.getState(String(req.params.id), { includePayloads: req.query.payloads === "1" }));
     }),
   );
 
@@ -131,7 +132,7 @@ export function createApp(s: AppServices) {
   app.post(
     "/api/missions/:id/tamper",
     wrap((req, res) => {
-      const { mode } = z.object({ mode: z.enum(["EDIT_EVIDENCE", "REWRITE_HASHES"]).default("EDIT_EVIDENCE") }).parse(req.body ?? {});
+      const { mode } = z.object({ mode: z.enum(["EDIT_EVIDENCE", "REWRITE_HASHES", "DELETE_LAST_EVENT"]).default("EDIT_EVIDENCE") }).parse(req.body ?? {});
       res.json(s.missions.tamper(String(req.params.id), mode));
     }),
   );

@@ -17,7 +17,7 @@ import {
   VerificationResult,
 } from "./domain";
 
-export const ScenarioId = z.enum(["A_APPROVED", "B_BUDGET_BLOCK", "C_DUPLICATE_PAYMENT", "D_UNVERIFIED_SUPPLIER", "E_HUMAN_REVIEW", "F_TAMPERING"]);
+export const ScenarioId = z.enum(["A_APPROVED", "B_BUDGET_BLOCK", "C_DUPLICATE_PAYMENT", "D_UNVERIFIED_SUPPLIER", "E_HUMAN_REVIEW", "F_TAMPERING", "G_RECYCLED_INVOICE"]);
 export type ScenarioId = z.infer<typeof ScenarioId>;
 
 export const ScenarioInfo = z.object({
@@ -46,6 +46,8 @@ export const ApprovalRequest = z.object({
   decision: z.enum(["APPROVED", "REJECTED"]),
   reason: z.string().trim().min(5).max(500),
   actorId: z.string().min(2).max(60),
+  /** Operator PIN, checked server-side (demo operator authentication). */
+  pin: z.string().min(4).max(12),
 });
 export type ApprovalRequest = z.infer<typeof ApprovalRequest>;
 
@@ -97,7 +99,7 @@ export const PublicConfig = z.object({
     mirrorNodeUrl: z.string(),
     topicHashscanUrl: z.string().nullable(),
   }),
-  payment: z.object({ demoSettlementHbar: z.number() }),
+  payment: z.object({ hbarPer1000Usd: z.number(), maxSettlementHbar: z.number() }),
   policy: z.object({
     version: z.string(),
     autonomousLimitUsd: z.number(),
@@ -107,6 +109,8 @@ export const PublicConfig = z.object({
     allowedCategories: z.array(z.string()),
   }),
   operators: z.array(z.string()),
+  /** How approvals are authenticated. */
+  operatorAuth: z.enum(["DEMO_PIN", "DISABLED"]),
 });
 export type PublicConfig = z.infer<typeof PublicConfig>;
 

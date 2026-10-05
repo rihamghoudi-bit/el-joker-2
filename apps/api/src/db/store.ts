@@ -137,7 +137,12 @@ export class Store {
     this.feedSeq = Number(row.m);
   }
 
+  private closed = false;
+
+  /** Idempotent: closing twice is a no-op. */
   close() {
+    if (this.closed) return;
+    this.closed = true;
     this.db.close();
   }
 
@@ -343,6 +348,23 @@ export class Store {
   getSimulatedMessage(sequenceNumber: number): { message: string; consensusTimestamp: string; topicId: string } | null {
     const r = this.db.prepare("SELECT * FROM simulated_ledger WHERE sequence_number = ?").get(sequenceNumber) as Row | undefined;
     return r ? { message: String(r.message), consensusTimestamp: String(r.consensus_timestamp), topicId: String(r.topic_id) } : null;
+  }
+
+  listSimulatedMessages(sinceIso: string | null): { sequenceNumber: number; message: string; consensusTimestamp: string; topicId: string }[] {
+    const rows = (sinceIso
+      ? this.db.prepare("SELECT * FROM simulated_ledger WHERE consensus_timestamp >= ? ORDER BY sequence_number").all(sinceIso)
+      : this.db.prepare("SELECT * FROM simulated_ledger ORDER BY sequence_number").all()) as Row[];
+    return rows.map((r) => ({ sequenceNumber: Number(r.sequence_number), message: String(r.message), consensusTimestamp: String(r.consensus_timestamp), topicId: String(r.topic_id) }));
+  }
+
+  /** DEMO-ONLY: an insider deletes a historical event from the local database. */
+  deleteAuditEvent(eventId: string) {
+    this.db.prepare("DELETE FROM audit_events WHERE event_id = ?").run(eventId);
+  }
+
+  /** Demo history: an offer from an earlier (fictional) mission, so a recycled invoice can be detected. */
+  upsertHistoricalOffer(o: Offer) {
+    this.db.prepare("INSERT INTO offers (offer_id, mission_id, supplier_id, invoice_id, data) VALUES (?, ?, ?, ?, ?) ON CONFLICT(offer_id) DO NOTHING").run(o.offerId, o.missionId, o.supplierId, o.invoiceId, j(o));
   }
 
   /** DEMO-ONLY reset of all mission data (suppliers are re-seeded by the caller). */

@@ -41,6 +41,8 @@ export interface LedgerGateway {
   transferHbar(args: { to: string; amountHbar: number; memo: string }): Promise<TransferResult>;
   /** Independent read-back (Mirror Node for testnet). Returns null when not (yet) available. */
   fetchTopicMessage(sequenceNumber: number): Promise<LedgerMessage | null>;
+  /** All topic messages from a consensus time onwards (Mirror Node listing). Used to detect deleted local history. */
+  listTopicMessages(sinceIso: string | null): Promise<LedgerMessage[]>;
   fetchTransaction(transactionId: string): Promise<LedgerTransaction | null>;
   hashscanTransactionUrl(transactionId: string | null, consensusTimestamp?: string | null): string | null;
   hashscanTopicUrl(): string | null;

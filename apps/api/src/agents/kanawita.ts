@@ -22,6 +22,12 @@ import type { LoadedPolicy } from "./guardian/policy";
 
 export type PaymentTrigger = "AUTO" | "AFTER_HUMAN_APPROVAL" | "REPLAY";
 
+/** Scaled demo settlement: proportional to the authorized USD amount, capped, 4 decimals (min 0.0001 HBAR). */
+export function settlementFor(amountUsd: number, hbarPer1000Usd: number, maxHbar: number): number {
+  const raw = (amountUsd / 1000) * hbarPer1000Usd;
+  return Math.max(0.0001, Math.min(maxHbar, Math.round(raw * 10_000) / 10_000));
+}
+
 export interface PaymentOutcome {
   executed: boolean;
   payment: Payment | null;
@@ -81,7 +87,7 @@ export class Kanawita {
       const anchor = await proofs.waitForAnchor(authEvent.eventId, this.deps.anchorTimeoutMs ?? 45_000);
       if (ledger.mode === "LIVE_TESTNET" && anchor.status !== "ANCHORED") return this.block(missionId, trigger, [`Authorization proof not anchored on Hedera (${anchor.error ?? anchor.status})`]);
 
-      const settlement = config.hedera.demoSettlementHbar;
+      const settlement = settlementFor(offer.totalPrice, config.hedera.hbarPer1000Usd, config.hedera.maxSettlementHbar);
       const payment: Payment = {
         paymentId: newId("pay"),
         missionId,
@@ -113,14 +119,14 @@ export class Kanawita {
         missionId,
         eventType: "PAYMENT_INITIATED",
         agent: "KANAWITA",
-        summary: `Payment initiated: ${settlement} HBAR scaled demo settlement for $${offer.totalPrice.toLocaleString("en-US")} offer`,
+        summary: `Payment initiated: ${settlement} HBAR scaled demo settlement for the $${offer.totalPrice.toLocaleString("en-US")} offer`,
         payload: {
           paymentId: payment.paymentId,
           idempotencyKey: payment.idempotencyKey,
           offerId: offer.offerId,
           invoiceId: offer.invoiceId,
           offerAmountUsd: offer.totalPrice,
-          settlement: { amount: settlement, currency: "HBAR", note: "Scaled demo amount on Hedera testnet; not the full offer value" },
+          settlement: { amount: settlement, currency: "HBAR", rate: `${config.hedera.hbarPer1000Usd} HBAR per $1,000 (cap ${config.hedera.maxSettlementHbar} HBAR)`, note: "Scaled demo amount on Hedera testnet, proportional to the authorized offer" },
           payeeAccountId: ledger.payeeAccountId,
           mode: ledger.mode,
           authorizationEventId: authEvent.eventId,

@@ -73,7 +73,7 @@ console.log(`EL JOKER demo check · API ${API} · ledger ${cfg.hedera.mode}${cfg
   const id = await run("E_HUMAN_REVIEW");
   const s1 = await waitFor(id, (x) => ["HUMAN_REVIEW", "BLOCKED", "FAILED", "PAID"].includes(x.mission.status));
   const okReview = s1.mission.status === "HUMAN_REVIEW" && s1.payments.length === 0;
-  await call(`/api/missions/${id}/approvals`, "POST", { decision: "APPROVED", reason: "Need confirmed by field team (demo check)", actorId: cfg.operators[0] });
+  await call(`/api/missions/${id}/approvals`, "POST", { decision: "APPROVED", reason: "Need confirmed by field team (demo check)", actorId: cfg.operators[0], pin: process.env.DEMO_OPERATOR_PIN || "0619" });
   const s2 = await waitFor(id, (x) => ["PAID", "PAYMENT_FAILED", "BLOCKED", "REJECTED", "FAILED"].includes(x.mission.status));
   record("E human review", okReview && s2.mission.status === "PAID", `review stopped payment: ${okReview} · after approval: ${s2.mission.status}`);
 }
@@ -85,6 +85,22 @@ console.log(`EL JOKER demo check · API ${API} · ledger ${cfg.hedera.mode}${cfg
   const t = await call<{ eventType: string; field: string; before: unknown; after: unknown; error?: string }>(`/api/missions/${id}/tamper`, "POST", { mode: "REWRITE_HASHES" });
   const after = (await call<TrailVerification>(`/api/missions/${id}/verify`, "POST")).body;
   record("F tampering detection", before.overall === "VALID" && after.overall === "TAMPERING_DETECTED", `before ${before.overall} · tamper ${t.body.eventType}.${t.body.field} ${JSON.stringify(t.body.before)}→${JSON.stringify(t.body.after)} · after ${after.overall}`);
+}
+// F' — deleted history (completeness against the ledger listing)
+{
+  const id = await run("F_TAMPERING");
+  await waitFor(id, (x) => ["PAID", "PAYMENT_FAILED", "BLOCKED", "FAILED"].includes(x.mission.status));
+  const before = (await call<TrailVerification>(`/api/missions/${id}/verify`, "POST")).body;
+  const t = await call<{ eventType: string }>(`/api/missions/${id}/tamper`, "POST", { mode: "DELETE_LAST_EVENT" });
+  const after = (await call<TrailVerification>(`/api/missions/${id}/verify`, "POST")).body;
+  record("F' deleted event detection", before.overall === "VALID" && after.overall === "TAMPERING_DETECTED" && after.missingLocalEvents.length === 1, `deleted ${t.body.eventType} · after ${after.overall} · missing locally: ${after.missingLocalEvents.map((m) => m.eventType).join(", ")}`);
+}
+// G
+{
+  const id = await run("G_RECYCLED_INVOICE");
+  const s = await waitFor(id, (x) => ["BLOCKED", "FAILED", "PAID", "HUMAN_REVIEW"].includes(x.mission.status));
+  const dup = s.verification?.checks.find((c) => c.id === "DUPLICATE_INVOICE");
+  record("G recycled invoice", s.mission.status === "BLOCKED" && dup?.passed === false && s.payments.length === 0, `NASNES ${s.verification?.status} (${dup?.detail}) · 3ASES ${s.guardianDecision?.decision}`);
 }
 
 const failed = results.filter((r) => !r.ok);

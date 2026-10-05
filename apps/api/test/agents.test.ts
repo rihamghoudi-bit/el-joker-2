@@ -42,7 +42,7 @@ describe("LEM3ALEM", () => {
   });
 
   it("uses Claude output when available (REAL_AI) and still validates it", async () => {
-    const ai = new StubAiClient("claude-test", () => ({ description: "Water for Sfax", location: "Sfax", beneficiaries: 300, maximumBudgetUsd: 3000, urgency: "HIGH", deadlineHours: 48, items: [{ category: "WATER", name: "Bottled drinking water 1.5L", quantity: 1800, unit: "bottle" }] }));
+    const ai = new StubAiClient("claude-test", () => ({ description: "Water for Sfax", location: "Sfax", beneficiaries: 300, maximumBudgetUsd: 3000, budgetCurrency: "USD", urgency: "HIGH", deadlineHours: 48, items: [{ category: "WATER", name: "Bottled drinking water 1.5L", quantity: 1800, unit: "bottle" }] }));
     const r = await planMission({ text: "300 people in Sfax need water, budget 3000 dollars" }, ai);
     expect(r.mode).toBe("REAL_AI");
     expect(r.model).toBe("claude-test");

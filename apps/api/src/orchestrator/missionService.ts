@@ -19,9 +19,10 @@ import type { AppConfig } from "../config";
 import type { ProofService, TamperMode } from "../audit/proofService";
 import type { Store } from "../db/store";
 import type { LedgerGateway } from "../hedera/gateway";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { hashCanonical, newId, nowIso, sleep } from "../lib/canonical";
 import { logger } from "../logger";
-import { DEMO_SUPPLIERS, getScenario } from "../seed/demoData";
+import { DEMO_SUPPLIERS, getScenario, HISTORICAL_OFFERS } from "../seed/demoData";
 import { approvalEvidence, buildGuardianSnapshot, postFeed } from "../agents/context";
 import { evaluate } from "../agents/guardian/engine";
 import type { LoadedPolicy } from "../agents/guardian/policy";
@@ -53,6 +54,8 @@ const modeChip = (mode: ExecutionMode, model: string | null) => (mode === "REAL_
 export class MissionService {
   readonly kanawita: Kanawita;
   private running = new Map<string, Promise<void>>();
+  /** Failed PIN attempts per mission (simple lockout against guessing). */
+  private pinFailures = new Map<string, { count: number; until: number }>();
   private currentAgent = new Map<string, AgentName | null>();
 
   constructor(private readonly deps: MissionServiceDeps) {
@@ -61,6 +64,7 @@ export class MissionService {
 
   seedSuppliers() {
     for (const s of DEMO_SUPPLIERS) this.deps.store.upsertSupplier(s);
+    for (const o of HISTORICAL_OFFERS) this.deps.store.upsertHistoricalOffer(o);
   }
 
   /* ------------------------------------------------------------------ */
@@ -69,7 +73,7 @@ export class MissionService {
 
   async createMission(req: CreateMissionRequest, scenarioId: string | null = null, requestText: string | null = null): Promise<{ missionId: string; status: Mission["status"]; missingFields: string[] }> {
     const { store, ai } = this.deps;
-    const plan = await planMission(req, ai);
+    const plan = await planMission(req, ai, { tndPerUsd: this.deps.config.tndPerUsd });
     const missionId = newId("msn");
     const draft = plan.draft;
     const mission: Mission = {
@@ -137,6 +141,7 @@ export class MissionService {
     const mission = this.mustGet(missionId);
     if (mission.status !== "HUMAN_REVIEW") throw new DomainError("NOT_IN_REVIEW", `Mission is ${mission.status}, not awaiting human review`, 409);
     if (!config.operators.includes(req.actorId)) throw new DomainError("UNAUTHORIZED_OPERATOR", `"${req.actorId}" is not an authorized operator`, 403);
+    this.checkPin(missionId, req.pin);
     const last = store.latestGuardianDecision(missionId);
     if (!last || last.decision !== "HUMAN_REVIEW_REQUIRED") throw new DomainError("NO_REVIEW_DECISION", "No pending Guardian review decision", 409);
     // The approval binds to the exact facts the operator reviewed.
@@ -187,10 +192,10 @@ export class MissionService {
     const { store, proofs } = this.deps;
     const report = await proofs.verifyMissionTrail(missionId);
     if (report.overall === "TAMPERING_DETECTED") {
-      const tamperedIds = report.events.filter((e) => e.status === "TAMPERED").map((e) => e.eventId).sort();
+      const tamperedIds = [...report.events.filter((e) => e.status === "TAMPERED").map((e) => e.eventId), ...report.missingLocalEvents.map((m) => m.eventId)].sort();
       const already = store.listAuditEvents(missionId).some((e) => e.eventType === "TAMPER_DETECTED" && hashCanonical(e.payload.tamperedEventIds) === hashCanonical(tamperedIds));
       if (!already) {
-        proofs.recordEvent({ missionId, eventType: "TAMPER_DETECTED", agent: "NASNES", summary: `Tampering detected in ${tamperedIds.length} event(s)`, payload: { tamperedEventIds: tamperedIds, tamperedEventTypes: report.events.filter((e) => e.status === "TAMPERED").map((e) => e.eventType), verifiedAt: report.verifiedAt, ledgerMode: report.ledgerMode } });
+        proofs.recordEvent({ missionId, eventType: "TAMPER_DETECTED", agent: "NASNES", summary: `Tampering detected in ${tamperedIds.length} event(s)`, payload: { tamperedEventIds: tamperedIds, tamperedEventTypes: report.events.filter((e) => e.status === "TAMPERED").map((e) => e.eventType), deletedEventTypes: report.missingLocalEvents.map((m) => m.eventType), verifiedAt: report.verifiedAt, ledgerMode: report.ledgerMode } });
       }
       postFeed(store, missionId, "NASNES", "alert", `Someone changed the history! ${report.summary}. The local record no longer matches the Hedera proof.`, ["TAMPERING DETECTED"]);
     } else if (report.overall === "VALID") {
@@ -203,7 +208,7 @@ export class MissionService {
     if (!this.deps.config.demoMode) throw new DomainError("DEMO_ONLY", "Tampering simulation is only available in demo/development mode", 403);
     this.mustGet(missionId);
     const res = this.deps.proofs.tamper(missionId, mode);
-    postFeed(this.deps.store, missionId, "SYSTEM", "alert", `⚠ DEMO: local history edited — ${res.eventType}.${res.field}: ${JSON.stringify(res.before)} → ${JSON.stringify(res.after)}${mode === "REWRITE_HASHES" ? " (and the local hash chain was recomputed to hide it)" : ""}.`, ["SIMULATED TAMPERING"]);
+    postFeed(this.deps.store, missionId, "SYSTEM", "alert", `⚠ DEMO: local history edited — ${res.eventType}.${res.field}: ${JSON.stringify(res.before)} → ${JSON.stringify(res.after)}${mode === "REWRITE_HASHES" ? " (and the local hash chain was recomputed to hide it)" : mode === "DELETE_LAST_EVENT" ? " (the event was erased from the local database)" : ""}.`, ["SIMULATED TAMPERING"]);
     return res;
   }
 
@@ -212,7 +217,7 @@ export class MissionService {
     await this.deps.proofs.idle(missionId);
   }
 
-  getState(missionId: string): MissionState {
+  getState(missionId: string, opts: { includePayloads?: boolean } = {}): MissionState {
     const { store } = this.deps;
     const mission = this.mustGet(missionId);
     const offers = store.listOffers(missionId);
@@ -229,7 +234,8 @@ export class MissionService {
       guardianDecision: store.latestGuardianDecision(missionId),
       approvals: store.getApproval(missionId) ? [store.getApproval(missionId)!] : [],
       payments: store.listPayments(missionId),
-      auditEvents: store.listAuditEvents(missionId),
+      // Off-chain evidence payloads are only sent when asked (audit view): keeps polling responses small.
+      auditEvents: opts.includePayloads ? store.listAuditEvents(missionId) : store.listAuditEvents(missionId).map((e) => ({ ...e, payload: {} })),
       feed: store.listFeed(missionId),
       currentAgent: this.currentAgent.get(missionId) ?? null,
       busy: this.running.has(missionId),
@@ -438,6 +444,22 @@ export class MissionService {
       /* never crash the server */
     }
     this.currentAgent.set(missionId, null);
+  }
+
+  /** Constant-time PIN comparison with a lockout after 5 failures (60 s). */
+  private checkPin(missionId: string, pin: string) {
+    const expected = this.deps.config.operatorPin;
+    if (!expected) throw new DomainError("APPROVALS_DISABLED", "Approvals are disabled: set DEMO_OPERATOR_PIN on the server", 503);
+    const f = this.pinFailures.get(missionId);
+    if (f && f.until > Date.now()) throw new DomainError("PIN_LOCKED", "Too many wrong PINs — try again in a minute", 429);
+    const digest = (v: string) => createHash("sha256").update(v).digest();
+    if (!timingSafeEqual(digest(pin), digest(expected))) {
+      const count = (f?.count ?? 0) + 1;
+      this.pinFailures.set(missionId, { count, until: count >= 5 ? Date.now() + 60_000 : 0 });
+      logger.warn("approval.bad_pin", { missionId, attempts: count });
+      throw new DomainError("INVALID_PIN", "Invalid operator PIN", 403);
+    }
+    this.pinFailures.delete(missionId);
   }
 
   private mustGet(missionId: string): Mission {

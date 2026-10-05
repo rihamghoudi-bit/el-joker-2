@@ -15,7 +15,7 @@ describe("Scenario A — approved mission", () => {
     expect(state.verification?.status).toBe("VERIFIED");
     expect(state.payments).toHaveLength(1);
     expect(state.payments[0]!.status).toBe("CONFIRMED");
-    expect(state.payments[0]!.settlementAmount).toBe(1);
+    expect(state.payments[0]!.settlementAmount).toBe(1.0375); // $4,150 / 1000 * 0.25 HBAR
     expect(state.payments[0]!.hederaTransactionId).toBeNull(); // simulated ledger never invents tx ids
     expect(eventTypes(app, missionId)).toEqual(["MISSION_CREATED", "AI_RECOMMENDATION", "SUPPLIER_VERIFIED", "GUARDIAN_APPROVED", "PAYMENT_INITIATED", "PAYMENT_CONFIRMED"]);
     expect(state.auditEvents.every((e) => e.anchor.status === "SIMULATED")).toBe(true);
@@ -63,7 +63,7 @@ describe("Scenario C — duplicate payment attack", () => {
   it("two concurrent executions produce exactly one payment", async () => {
     app = await makeTestApp();
     const { missionId } = await runScenarioToRest(app, "E_HUMAN_REVIEW");
-    await app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "Verified need, approved", actorId: "ops-lead" });
+    await app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "Verified need, approved", actorId: "ops-lead", pin: "0619" });
     const [a, b] = await Promise.all([app.missions.kanawita.execute(missionId, "REPLAY"), app.missions.kanawita.execute(missionId, "REPLAY")]);
     await app.missions.idle(missionId);
     const live = app.store.listPayments(missionId).filter((p) => p.status !== "FAILED");
@@ -119,9 +119,9 @@ describe("Scenario E — high-risk human review", () => {
     expect(early.executed).toBe(false);
     expect(early.reasons.join(" ")).toMatch(/HUMAN_REVIEW_REQUIRED|human approval/i);
 
-    await expect(app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "I am not allowed", actorId: "random-user" })).rejects.toThrow(/not an authorized operator/);
+    await expect(app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "I am not allowed", actorId: "random-user", pin: "0619" })).rejects.toThrow(/not an authorized operator/);
 
-    await app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "Need confirmed by field team", actorId: "ops-lead" });
+    await app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "Need confirmed by field team", actorId: "ops-lead", pin: "0619" });
     await app.missions.idle(missionId);
     const after = app.missions.getState(missionId);
     expect(after.mission.status).toBe("PAID");
@@ -131,13 +131,13 @@ describe("Scenario E — high-risk human review", () => {
     expect(eventTypes(app, missionId)).toEqual([
       "MISSION_CREATED", "AI_RECOMMENDATION", "SUPPLIER_VERIFIED", "HUMAN_REVIEW_REQUIRED", "PAYMENT_BLOCKED", "HUMAN_APPROVED", "GUARDIAN_APPROVED", "PAYMENT_INITIATED", "PAYMENT_CONFIRMED",
     ]);
-    await expect(app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "second time", actorId: "ops-lead" })).rejects.toThrow(/not awaiting human review/);
+    await expect(app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "second time", actorId: "ops-lead", pin: "0619" })).rejects.toThrow(/not awaiting human review/);
   });
 
   it("a rejection ends the mission with no payment", async () => {
     app = await makeTestApp();
     const { missionId } = await runScenarioToRest(app, "E_HUMAN_REVIEW");
-    await app.missions.submitApproval(missionId, { decision: "REJECTED", reason: "Duplicate request from another NGO", actorId: "field-coordinator" });
+    await app.missions.submitApproval(missionId, { decision: "REJECTED", reason: "Duplicate request from another NGO", actorId: "field-coordinator", pin: "0619" });
     await app.missions.idle(missionId);
     const s = app.missions.getState(missionId);
     expect(s.mission.status).toBe("REJECTED");
