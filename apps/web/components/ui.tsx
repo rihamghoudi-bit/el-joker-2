@@ -57,7 +57,7 @@ export function Avatar({ agent, size = 36, active = false }: { agent: AgentName;
 
 export function Panel({ title, right, children, className }: { title?: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cx("rounded-2xl border border-ink-700 bg-ink-900/80 backdrop-blur", className)}>
+    <section className={cx("rounded-2xl border border-white/10 bg-ink-900/70 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur-md", className)}>
       {title !== undefined && (
         <header className="flex items-center justify-between gap-2 border-b border-ink-700/70 px-4 py-2.5">
           <h2 className="font-display text-[13px] font-semibold tracking-wide text-ink-300 uppercase">{title}</h2>

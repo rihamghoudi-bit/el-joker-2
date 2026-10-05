@@ -7,6 +7,7 @@ import { AgentLineup } from "./AgentLineup";
 import { ApprovalCard } from "./ApprovalCard";
 import { AuditTimeline } from "./AuditTimeline";
 import { ChatFeed } from "./ChatFeed";
+import { HackerBackground } from "./HackerBackground";
 import { Header } from "./Header";
 import { ProofVerify } from "./ProofVerify";
 import { Sidebar } from "./Sidebar";
@@ -142,7 +143,8 @@ export function MissionControl() {
   const mission = state?.mission;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-[1680px] flex-col">
+    <div className="relative isolate mx-auto flex min-h-screen max-w-[1680px] flex-col">
+      <HackerBackground />
       <Header config={config} />
       {apiDown && (
         <div className="mx-5 mt-3 rounded-xl border border-tn-red/50 bg-tn-red/10 px-4 py-2 text-sm text-[#ff9aa3]">
@@ -213,7 +215,7 @@ export function MissionControl() {
                 </button>
               ))}
             </div>
-            <div className="pattern relative min-h-0 flex-1 overflow-hidden bg-ink-900/40">
+            <div className="pattern relative min-h-0 flex-1 overflow-hidden bg-ink-950/30">
               {!state ? (
                 <div className="grid h-full min-h-[50vh] place-items-center p-8 text-center">
                   <div>

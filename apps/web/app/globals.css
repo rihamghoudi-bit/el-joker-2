@@ -47,10 +47,46 @@ html, body {
 }
 
 body {
-  background-image:
-    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--color-tn-red) 12%, transparent), transparent 60%),
-    radial-gradient(900px 500px at 110% 0%, color-mix(in srgb, var(--color-sidi) 10%, transparent), transparent 60%);
-  background-attachment: fixed;
+  background: transparent;
+}
+
+/* ---------- Synthwave hacker backdrop ---------- */
+.nebula {
+  background:
+    radial-gradient(40% 35% at 30% 30%, rgba(236, 72, 153, 0.55), transparent 70%),
+    radial-gradient(35% 30% at 70% 20%, rgba(251, 146, 60, 0.35), transparent 70%),
+    radial-gradient(45% 40% at 60% 65%, rgba(147, 51, 234, 0.5), transparent 70%),
+    radial-gradient(30% 30% at 15% 75%, rgba(231, 0, 19, 0.35), transparent 70%),
+    radial-gradient(30% 25% at 85% 80%, rgba(46, 163, 242, 0.25), transparent 70%);
+  filter: blur(30px) saturate(1.2);
+  animation: nebula-drift 40s ease-in-out infinite alternate;
+}
+@keyframes nebula-drift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(3%, -2%, 0) rotate(4deg) scale(1.05); }
+  100% { transform: translate3d(-3%, 2%, 0) rotate(-3deg) scale(1.02); }
+}
+.crystal {
+  animation-name: crystal-float;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  opacity: 0.85;
+}
+@keyframes crystal-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
+  50% { transform: translate3d(12px, -28px, 0) rotate(14deg); }
+}
+.scanlines {
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+  animation: scan-flicker 6s steps(60) infinite;
+}
+@keyframes scan-flicker {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nebula, .crystal, .scanlines { animation: none; }
 }
 
 /* Subtle Tunisian zellige-like pattern for panels */
