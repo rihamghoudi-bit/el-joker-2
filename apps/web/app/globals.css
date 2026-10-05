@@ -5,16 +5,17 @@
   --font-display: var(--font-display), var(--font-inter), ui-sans-serif, sans-serif;
   --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-ink-950: #080b14;
-  --color-ink-900: #0e1322;
-  --color-ink-850: #121a2d;
-  --color-ink-800: #18213a;
-  --color-ink-700: #222d4b;
-  --color-ink-600: #2e3a5c;
-  --color-ink-400: #7b88a8;
-  --color-ink-300: #a7b1c9;
-  --color-ink-100: #e7ebf5;
+  --color-ink-950: #050507;
+  --color-ink-900: #0b0b14;
+  --color-ink-850: #10101c;
+  --color-ink-800: #161626;
+  --color-ink-700: #23233a;
+  --color-ink-600: #33334f;
+  --color-ink-400: #8a8aa8;
+  --color-ink-300: #b4b4cc;
+  --color-ink-100: #ececf6;
 
+  --color-indigo: #5b4bff;
   --color-tn-red: #e70013;
   --color-gold: #f5b700;
   --color-sidi: #2ea3f2;
@@ -22,18 +23,19 @@
   --color-amber: #f59e0b;
   --color-violet: #a78bfa;
   --color-teal: #2dd4bf;
+  --color-cyan: #67e8f9;
 
   --animate-pulse-ring: pulse-ring 1.6s ease-out infinite;
-  --animate-rise: rise 0.35s ease-out both;
+  --animate-rise: rise 0.4s ease-out both;
   --animate-blink: blink 1.2s infinite;
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring, #f5b700) 70%, transparent); }
-  100% { box-shadow: 0 0 0 14px transparent; }
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ring, #5b4bff) 70%, transparent); }
+  100% { box-shadow: 0 0 0 16px transparent; }
 }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes blink {
@@ -42,61 +44,67 @@
 }
 
 html, body {
-  background: var(--color-ink-950);
+  background: #000;
   color: var(--color-ink-100);
 }
 
-body {
-  background: transparent;
+/* ---------- Floating glass slabs (inspired by the reference video) ---------- */
+.slab-stage {
+  perspective: 1600px;
+  perspective-origin: 50% 20%;
 }
-
-/* ---------- Synthwave hacker backdrop ---------- */
-.nebula {
-  background:
-    radial-gradient(40% 35% at 30% 30%, rgba(236, 72, 153, 0.55), transparent 70%),
-    radial-gradient(35% 30% at 70% 20%, rgba(251, 146, 60, 0.35), transparent 70%),
-    radial-gradient(45% 40% at 60% 65%, rgba(147, 51, 234, 0.5), transparent 70%),
-    radial-gradient(30% 30% at 15% 75%, rgba(231, 0, 19, 0.35), transparent 70%),
-    radial-gradient(30% 25% at 85% 80%, rgba(46, 163, 242, 0.25), transparent 70%);
-  filter: blur(30px) saturate(1.2);
-  animation: nebula-drift 40s ease-in-out infinite alternate;
+.slab-plane {
+  position: absolute;
+  left: -30%;
+  top: -40%;
+  width: 160%;
+  height: 180%;
+  transform-style: preserve-3d;
+  transform: rotateX(58deg) rotateZ(-32deg);
+  animation: plane-drift 60s linear infinite alternate;
 }
-@keyframes nebula-drift {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  50% { transform: translate3d(3%, -2%, 0) rotate(4deg) scale(1.05); }
-  100% { transform: translate3d(-3%, 2%, 0) rotate(-3deg) scale(1.02); }
+@keyframes plane-drift {
+  from { transform: rotateX(58deg) rotateZ(-32deg) translate3d(0, 0, 0); }
+  to { transform: rotateX(58deg) rotateZ(-32deg) translate3d(-4%, -10%, 0); }
 }
-.crystal {
-  animation-name: crystal-float;
-  animation-iteration-count: infinite;
-  animation-timing-function: ease-in-out;
-  opacity: 0.85;
+.slab {
+  position: absolute;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(91, 75, 255, 0.92), rgba(60, 40, 230, 0.85) 60%, rgba(110, 90, 255, 0.9));
+  border: 1px solid rgba(190, 180, 255, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(91, 75, 255, 0.4),
+    0 10px 0 -2px rgba(150, 135, 255, 0.55),
+    0 30px 60px -10px rgba(60, 40, 255, 0.45);
+  transform: translateZ(var(--z));
+  animation: slab-float 9s ease-in-out infinite;
 }
-@keyframes crystal-float {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
-  50% { transform: translate3d(12px, -28px, 0) rotate(14deg); }
+.slab-line {
+  position: absolute;
+  right: 12%;
+  bottom: 22%;
+  width: 28%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #67e8f9, transparent);
+  box-shadow: 0 0 10px #67e8f9;
 }
-.scanlines {
-  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay;
-  animation: scan-flicker 6s steps(60) infinite;
-}
-@keyframes scan-flicker {
-  0%, 100% { opacity: 0.9; }
-  50% { opacity: 0.6; }
+@keyframes slab-float {
+  0%, 100% { transform: translateZ(var(--z)); }
+  50% { transform: translateZ(calc(var(--z) + 40px)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nebula, .crystal, .scanlines { animation: none; }
-}
-
-/* Subtle Tunisian zellige-like pattern for panels */
-.pattern {
-  background-image:
-    linear-gradient(45deg, color-mix(in srgb, var(--color-ink-700) 35%, transparent) 25%, transparent 25%),
-    linear-gradient(-45deg, color-mix(in srgb, var(--color-ink-700) 35%, transparent) 25%, transparent 25%);
-  background-size: 18px 18px;
+  .slab, .slab-plane { animation: none; }
 }
 
 .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-ink-600) transparent; }
 
-.hash { font-family: var(--font-mono); font-size: 11px; letter-spacing: -0.01em; word-break: break-all; }
+.hash { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: -0.01em; word-break: break-all; }
+
+/* glass surface used by panels */
+.glass {
+  background: linear-gradient(180deg, rgba(18, 16, 40, 0.72), rgba(8, 8, 18, 0.78));
+  border: 1px solid rgba(140, 128, 255, 0.22);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 20px 60px -20px rgba(40, 30, 160, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px) saturate(1.2);
+}

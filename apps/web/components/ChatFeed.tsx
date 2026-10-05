@@ -9,7 +9,7 @@ function CheckList({ items }: { items: { label: string; ok: boolean | "review"; 
   return (
     <ul className="mt-2 grid gap-1">
       {items.map((c, i) => (
-        <li key={i} className="flex items-start gap-2 text-[12px]">
+        <li key={i} className="flex items-start gap-2 text-[13px]">
           <span className={cx("mt-px w-4 shrink-0 text-center font-bold", c.ok === true ? "text-mint" : c.ok === "review" ? "text-amber" : "text-[#ff5c6a]")}>{c.ok === true ? "✓" : c.ok === "review" ? "!" : "✕"}</span>
           <span className="min-w-0">
             <span className="font-semibold text-ink-100">{c.label}</span> <span className="text-ink-400">— {c.detail}</span>
@@ -25,7 +25,7 @@ function Details({ msg, state }: { msg: FeedMessage; state: MissionState }) {
   if (d.recommendation) {
     const rec = d.recommendation as Recommendation;
     return (
-      <details className="mt-2 rounded-lg bg-ink-950/50 p-2 text-[12px]">
+      <details className="mt-3 rounded-2xl bg-black/30 p-3 text-[13px]">
         <summary className="cursor-pointer text-ink-300">Ranking of {rec.ranking.length} offers{d.fallbackReason ? ` · fallback reason: ${String(d.fallbackReason)}` : ""}</summary>
         <ol className="mt-2 grid gap-1">
           {rec.ranking.map((r) => (
@@ -91,57 +91,70 @@ export function ChatFeed({ state }: { state: MissionState }) {
 
   return (
     <div ref={box} className="scroll-thin h-full overflow-y-auto">
-    <div className="grid gap-3 p-4">
-      {state.feed.map((m) => {
-        const a = AGENTS[m.agent];
-        const isOperator = m.agent === "OPERATOR";
-        return (
-          <div key={m.id} className={cx("flex animate-rise gap-3", isOperator && "flex-row-reverse")}>
-            <Avatar agent={m.agent} size={44} />
-            <div className={cx("max-w-[88%] min-w-0", isOperator && "text-right")}>
-              <div className={cx("mb-1 flex flex-wrap items-center gap-2", isOperator && "justify-end")}>
-                <span className="text-[13px] font-bold" style={{ color: a.color }}>{a.name}</span>
-                <span className="text-[10.5px] text-ink-400 uppercase">{a.role}</span>
-                <span className="text-[10.5px] text-ink-600">{time(m.createdAt)}</span>
-              </div>
-              <div
-                className={cx(
-                  "rounded-2xl border px-3.5 py-2.5 text-left text-[13.5px] leading-relaxed",
-                  isOperator ? "rounded-tr-sm" : "rounded-tl-sm",
-                  m.kind === "alert" ? "border-tn-red/40 bg-tn-red/10" : m.kind === "success" ? "border-mint/30 bg-mint/[0.07]" : m.kind === "proof" ? "border-sidi/40 bg-sidi/10" : m.kind === "working" ? "border-ink-700 bg-ink-850 text-ink-300 italic" : "border-ink-700 bg-ink-850",
-                )}
-              >
-                {m.text}
-                <Details msg={m} state={state} />
-                {m.chips.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {m.chips.map((c) => (
-                      <Chip key={c} label={c} />
-                    ))}
-                  </div>
-                )}
+      <div className="mx-auto grid max-w-4xl gap-6 px-6 py-8">
+        {state.feed.map((m) => {
+          const a = AGENTS[m.agent];
+          const isOperator = m.agent === "OPERATOR";
+          const isRequest = isOperator && m.data?.request === true;
+          return (
+            <div key={m.id} className={cx("flex animate-rise gap-4", isOperator && "flex-row-reverse")}>
+              <Avatar agent={m.agent} size={48} />
+              <div className={cx("max-w-[82%] min-w-0", isOperator && "text-right")}>
+                <div className={cx("mb-1.5 flex flex-wrap items-center gap-2", isOperator && "justify-end")}>
+                  <span className="text-sm font-bold" style={{ color: isOperator ? "#b9b2ff" : a.color }}>{isOperator ? "You · Operator" : a.name}</span>
+                  {!isOperator && <span className="text-[11px] tracking-wide text-ink-400 uppercase">{a.role}</span>}
+                  <span className="text-[11px] text-ink-600">{time(m.createdAt)}</span>
+                </div>
+                <div
+                  className={cx(
+                    "rounded-3xl px-5 py-4 text-left text-[15px] leading-relaxed",
+                    isOperator ? "rounded-tr-md" : "rounded-tl-md border",
+                    isRequest
+                      ? "bg-gradient-to-br from-[#6d5dff] to-[#4434e6] text-white shadow-[0_10px_40px_-12px_#5b4bff]"
+                      : isOperator
+                        ? "border border-indigo/50 bg-indigo/20"
+                        : m.kind === "alert"
+                          ? "border-tn-red/40 bg-tn-red/10"
+                          : m.kind === "success"
+                            ? "border-mint/30 bg-mint/[0.07]"
+                            : m.kind === "proof"
+                              ? "border-cyan/40 bg-cyan/[0.07]"
+                              : m.kind === "working"
+                                ? "border-white/[0.06] bg-white/[0.02] text-ink-300 italic"
+                                : "border-white/[0.08] bg-white/[0.04]",
+                  )}
+                >
+                  {m.text}
+                  <Details msg={m} state={state} />
+                  {m.chips.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {m.chips.map((c) => (
+                        <Chip key={c} label={c} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-      {state.currentAgent && (
-        <div className="flex items-center gap-3 text-[12px] text-ink-400">
-          <Avatar agent={state.currentAgent} size={28} active />
-          <span>
-            <b style={{ color: AGENTS[state.currentAgent].color }}>{AGENTS[state.currentAgent].name}</b> is working
-            <span className="ml-1 inline-flex gap-0.5">
-              <span className="animate-blink">•</span>
-              <span className="animate-blink [animation-delay:0.2s]">•</span>
-              <span className="animate-blink [animation-delay:0.4s]">•</span>
+          );
+        })}
+        {state.currentAgent && (
+          <div className="flex items-center gap-3 text-sm text-ink-400">
+            <Avatar agent={state.currentAgent} size={34} active />
+            <span>
+              <b style={{ color: AGENTS[state.currentAgent].color }}>{AGENTS[state.currentAgent].name}</b> is working
+              <span className="ml-1 inline-flex gap-0.5">
+                <span className="animate-blink">•</span>
+                <span className="animate-blink [animation-delay:0.2s]">•</span>
+                <span className="animate-blink [animation-delay:0.4s]">•</span>
+              </span>
             </span>
-          </span>
-        </div>
-      )}
-      {state.mission.status === "PAID" && state.payments[0] && (
-        <p className="text-center text-[11px] text-ink-400">Settlement is a scaled demo amount ({state.payments[0].settlementAmount} ℏ) representing the {usd(state.payments[0].amount)} offer.</p>
-      )}
-    </div>
+          </div>
+        )}
+        {state.mission.status === "PAID" && state.payments[0] && (
+          <p className="text-center text-xs text-ink-400">Settlement is a scaled demo amount ({state.payments[0].settlementAmount} ℏ) representing the {usd(state.payments[0].amount)} offer.</p>
+        )}
+      </div>
     </div>
   );
 }

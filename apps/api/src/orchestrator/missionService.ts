@@ -89,6 +89,9 @@ export class MissionService {
       isDemo: scenarioId !== null,
     };
     store.insertMission(mission, plan.missingFields);
+    // The operator's request opens the conversation, exactly as it was sent.
+    const requestText = req.text ?? `${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")} for ${mission.beneficiaries.toLocaleString("en-US")} people in ${mission.location}.`;
+    postFeed(store, missionId, "OPERATOR", "status", requestText, ["REQUEST SENT"], { request: true });
     this.recordRun({ missionId, agent: "LEM3ALEM", mode: plan.mode, status: plan.status === "CREATED" ? "DONE" : "BLOCKED", input: req, summary: plan.status === "CREATED" ? `Mission created: ${mission.beneficiaries} people, ${mission.location}, $${mission.maximumBudget}` : `Needs information: ${plan.missingFields.join(", ")}`, model: plan.model, fallbackReason: plan.fallbackReason, latencyMs: plan.latencyMs });
 
     if (plan.status === "NEEDS_INFORMATION") {
