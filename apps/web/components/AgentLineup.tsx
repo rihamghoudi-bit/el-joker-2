@@ -70,7 +70,8 @@ export function AgentLineup({ state }: { state: MissionState | null }) {
         );
       })}
       <div className="flex min-w-0 items-center gap-2 rounded-xl border border-sidi/40 px-2.5 py-2">
-        <div className="grid h-[48px] w-[48px] shrink-0 place-items-center rounded-full bg-sidi/15 font-display text-2xl font-bold text-sidi ring-2 ring-sidi">ℏ</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/agents/hedera.png" alt="Hedera" className="h-[48px] w-[48px] shrink-0 rounded-full ring-2 ring-sidi" draggable={false} />
         <div>
           <div className="text-[13px] leading-tight font-bold text-sidi">Hedera</div>
           <div className="text-[10.5px] text-ink-400 uppercase">proof layer</div>
