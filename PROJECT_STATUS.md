@@ -78,16 +78,16 @@ F local tampering detected against Hedera proof.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Scaffold, domain models (Zod), DB, UI shell | ⏳ |
-| 2 | LEM3ALEM + orchestration + demo supplier data | ⏳ |
-| 3 | LEMHAF real AI/fallback + NASNES | ⏳ |
-| 4 | 3ASES policy + risk engine | ⏳ |
-| 5 | Human approval workflow | ⏳ |
-| 6 | HCS proof layer, canonical hashing, audit chain, Mirror verification | ⏳ |
-| 7 | KANAWITA safe testnet payment + idempotency | ⏳ |
-| 8 | Six demo scenarios | ⏳ |
-| 9 | Tests + hardening | ⏳ |
-| 10 | UX polish, README, architecture, demo script | ⏳ |
+| 1 | Scaffold, domain models (Zod), DB, UI shell | ✅ |
+| 2 | LEM3ALEM + orchestration + demo supplier data | ✅ |
+| 3 | LEMHAF real AI/fallback + NASNES | ✅ (real AI path implemented + stub-tested; live call blocked on key) |
+| 4 | 3ASES policy + risk engine | ✅ |
+| 5 | Human approval workflow | ✅ |
+| 6 | HCS proof layer, canonical hashing, audit chain, Mirror verification | ✅ (simulated ledger verified; live testnet blocked on credentials) |
+| 7 | KANAWITA safe testnet payment + idempotency | ✅ (simulated; live testnet blocked on credentials) |
+| 8 | Six demo scenarios | ✅ `npm run demo:check` 6/6 (simulated ledger, fallback AI) |
+| 9 | Tests + hardening | ✅ 76/76 tests |
+| 10 | UX polish, README, architecture, demo script | ✅ |
 
 ## 4. Credentials still required (blocked real-integration steps)
 
@@ -98,6 +98,17 @@ F local tampering detected against Hedera proof.
 | `HEDERA_TOPIC_ID` | HCS topic (can be created by `npm run hedera:setup`) | not provided |
 | `HEDERA_PAYEE_ACCOUNT_ID` | Demo supplier receiving account (testnet) | not provided |
 
-## 5. Log
+## 5. Verification results (simulated ledger, no AI key)
+
+- `npm run typecheck` — clean (shared, api, web)
+- `npm test` — 76/76 passing (guardian 20, agents 19, proof 16, scenarios E2E 15, HTTP API 6)
+- `npm run build` — API bundle + Next.js production build succeed; built API boots and runs scenario B
+- `npm run demo:check` — 6/6 scenarios PASS against the running dev API
+- UI checked in the browser: scenario A (PAID), E (approval card → approve → PAID), F (tamper → TAMPERING DETECTED), responsive layout
+
+## 6. Log
 
 - 2026-10-05: Read handoff pack (master prompt, PDF, 3 diagrams, references). Created repo and plan.
+- 2026-10-05: Backend (agents, guardian, proof layer, payments) + 15 E2E tests. Commit 24a4854.
+- 2026-10-05: Next.js mission room, full test suite (76), demo-check, hedera:setup, testnet test. Fixed tsup stripping `node:` from `node:sqlite`. Commit ed48902.
+- 2026-10-05: README, ARCHITECTURE, DEMO docs.
