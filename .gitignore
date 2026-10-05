@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+apps/api/data/
+apps/api/dist/
+apps/web/.next/
+apps/web/next-env.d.ts
+*.tsbuildinfo
+coverage/
+.DS_Store
+*.log
