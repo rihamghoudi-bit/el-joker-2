@@ -32,16 +32,30 @@ export function MissionControl() {
 
   const refreshList = useCallback(() => api.missions().then(setMissions).catch(() => undefined), []);
 
+  // Initial load; keeps retrying so the page recovers if the API starts after the UI.
   useEffect(() => {
-    Promise.all([api.config(), api.scenarios(), api.missions()])
-      .then(([c, s, m]) => {
-        setConfig(c);
-        setScenarios(s);
-        setMissions(m);
-        setApiDown(false);
-        if (m[0]) setActiveId(m[0].missionId);
-      })
-      .catch(() => setApiDown(true));
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const load = () =>
+      Promise.all([api.config(), api.scenarios(), api.missions()])
+        .then(([c, s, m]) => {
+          if (stop) return;
+          setConfig(c);
+          setScenarios(s);
+          setMissions(m);
+          setApiDown(false);
+          if (m[0]) setActiveId((cur) => cur ?? m[0]!.missionId);
+        })
+        .catch(() => {
+          if (stop) return;
+          setApiDown(true);
+          timer = setTimeout(load, 2500);
+        });
+    void load();
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   // Poll the active mission: fast while agents work, slower when idle.
@@ -203,7 +217,8 @@ export function MissionControl() {
               {!state ? (
                 <div className="grid h-full min-h-[50vh] place-items-center p-8 text-center">
                   <div>
-                    <div className="text-5xl">🃏</div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/agents/team.webp" alt="Lem3alem, Lemhaf, Kanawita, Nasnes and 3ases" className="mx-auto w-full max-w-xl rounded-2xl shadow-[0_10px_40px_-15px_rgba(231,0,19,0.5)]" />
                     <p className="mt-3 font-display text-xl font-bold">AI proposes. Nasnes verifies. 3ases decides. Humans control. Hedera proves.</p>
                     <p className="mt-1 text-sm text-ink-400">Launch scenario A to watch the five agents work.</p>
                   </div>

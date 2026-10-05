@@ -55,7 +55,7 @@ export function AgentLineup({ state }: { state: MissionState | null }) {
         return (
           <div key={id} className="relative min-w-0">
             <div className={cx("flex h-full items-center gap-2 rounded-xl border px-2.5 py-2 transition", RING[st])}>
-              <Avatar agent={id} size={34} active={st === "active"} />
+              <Avatar agent={id} size={48} active={st === "active"} />
               <div className="min-w-0">
                 <div className="flex items-center gap-1 text-[13px] leading-tight font-bold" style={{ color: a.color }}>
                   {a.name}
@@ -70,7 +70,7 @@ export function AgentLineup({ state }: { state: MissionState | null }) {
         );
       })}
       <div className="flex min-w-0 items-center gap-2 rounded-xl border border-sidi/40 px-2.5 py-2">
-        <div className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full bg-sidi/15 font-display text-lg font-bold text-sidi ring-2 ring-sidi">ℏ</div>
+        <div className="grid h-[48px] w-[48px] shrink-0 place-items-center rounded-full bg-sidi/15 font-display text-2xl font-bold text-sidi ring-2 ring-sidi">ℏ</div>
         <div>
           <div className="text-[13px] leading-tight font-bold text-sidi">Hedera</div>
           <div className="text-[10.5px] text-ink-400 uppercase">proof layer</div>

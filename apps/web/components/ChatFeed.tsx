@@ -97,7 +97,7 @@ export function ChatFeed({ state }: { state: MissionState }) {
         const isOperator = m.agent === "OPERATOR";
         return (
           <div key={m.id} className={cx("flex animate-rise gap-3", isOperator && "flex-row-reverse")}>
-            <Avatar agent={m.agent} size={38} />
+            <Avatar agent={m.agent} size={44} />
             <div className={cx("max-w-[88%] min-w-0", isOperator && "text-right")}>
               <div className={cx("mb-1 flex flex-wrap items-center gap-2", isOperator && "justify-end")}>
                 <span className="text-[13px] font-bold" style={{ color: a.color }}>{a.name}</span>

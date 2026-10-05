@@ -41,11 +41,16 @@ export function Avatar({ agent, size = 36, active = false }: { agent: AgentName;
   const a = AGENTS[agent];
   return (
     <div
-      className={cx("relative grid shrink-0 place-items-center rounded-full ring-2", active && "animate-pulse-ring")}
+      className={cx("relative grid shrink-0 place-items-center overflow-hidden rounded-full ring-2", active && "animate-pulse-ring")}
       style={{ width: size, height: size, background: `color-mix(in srgb, ${a.color} 18%, #0e1322)`, ["--tw-ring-color" as string]: a.color, ["--ring" as string]: a.color, fontSize: size * 0.48 }}
       title={`${a.name} — ${a.role}`}
     >
-      <span aria-hidden>{a.glyph}</span>
+      {a.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={a.image} alt="" className="h-full w-full rounded-full object-cover" draggable={false} />
+      ) : (
+        <span aria-hidden>{a.glyph}</span>
+      )}
     </div>
   );
 }
