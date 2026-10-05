@@ -23,7 +23,7 @@ export function TopBar(props: { config: PublicConfig | null; view: View; onView:
         </button>
 
         {props.hasMission && (
-          <nav className="flex items-center gap-1 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1" aria-label="Mission views">
+          <nav className="scroll-thin flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.03] p-1" aria-label="Mission views">
             {([
               ["conversation", "Conversation"],
               ["audit", "Audit trail"],
@@ -34,7 +34,7 @@ export function TopBar(props: { config: PublicConfig | null; view: View; onView:
                 type="button"
                 aria-current={props.view === k ? "page" : undefined}
                 onClick={() => props.onView(k)}
-                className={cx("rounded-xl px-4 py-2 text-sm font-semibold transition", props.view === k ? "bg-indigo text-white shadow-[0_0_20px_-6px_#5b4bff]" : "text-ink-300 hover:text-white")}
+                className={cx("rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition", props.view === k ? "bg-indigo text-white shadow-[0_0_20px_-6px_#5b4bff]" : "text-ink-300 hover:text-white")}
               >
                 {label}
               </button>

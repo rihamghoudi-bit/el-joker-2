@@ -6,7 +6,7 @@ import { Button, Chip } from "./ui";
 /** Chat-app style sidebar: new request + mission history. */
 export function HistoryList({ missions, activeId, onOpen, onNew }: { missions: MissionSummary[]; activeId: string | null; onOpen: (id: string) => void; onNew: () => void }) {
   return (
-    <aside className="hidden min-h-0 flex-col gap-3 lg:flex">
+    <aside className="hidden min-h-0 flex-col gap-3 lg:sticky lg:top-24 lg:row-span-2 lg:flex lg:max-h-[calc(100vh-7rem)] lg:self-start xl:static xl:max-h-none xl:self-stretch">
       <Button onClick={onNew} className="w-full">＋ New request</Button>
       <nav aria-label="Mission history" className="glass scroll-thin min-h-0 flex-1 overflow-y-auto rounded-3xl p-2">
         <div className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.16em] text-ink-400 uppercase">History</div>

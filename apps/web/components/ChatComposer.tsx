@@ -20,7 +20,7 @@ export function ChatComposer(props: {
 }) {
   const canSend = props.text.trim().length >= 10 && !props.disabled;
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3 [@media(max-height:820px)]:gap-2">
       {props.showChips && props.scenarios.length > 0 && (
         <div className="scroll-thin flex gap-2 overflow-x-auto pb-1">
           {props.scenarios.map((s) => (
@@ -53,9 +53,9 @@ export function ChatComposer(props: {
               if (canSend) props.onSend();
             }
           }}
-          rows={2}
+          rows={1}
           placeholder="Message EL JOKER… who, where, what is needed, budget"
-          className="max-h-40 min-h-[52px] flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-relaxed text-ink-100 placeholder:text-ink-400 focus:outline-none"
+          className="max-h-40 min-h-[48px] flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-relaxed [field-sizing:content] text-ink-100 placeholder:text-ink-400 focus:outline-none"
         />
         <button
           type="button"
@@ -67,7 +67,7 @@ export function ChatComposer(props: {
           ↑
         </button>
       </div>
-      <p className="text-center text-[11px] text-ink-400">AI recommends — it never authorizes money. 3ases decides with deterministic rules; every decision is anchored on Hedera.</p>
+      <p className="text-center text-[11px] text-ink-400 [@media(max-height:820px)]:hidden">AI recommends — it never authorizes money. 3ases decides with deterministic rules; every decision is anchored on Hedera.</p>
     </div>
   );
 }

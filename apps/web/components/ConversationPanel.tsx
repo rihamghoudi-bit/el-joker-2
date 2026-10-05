@@ -79,7 +79,7 @@ export function ConversationPanel({ m }: { m: MissionControlModel }) {
         </div>
       </div>
 
-      <div className="border-t border-white/[0.07] px-5 py-4">
+      <div className="border-t border-white/[0.07] px-5 py-4 [@media(max-height:820px)]:py-2.5">
         {m.notice && (
           <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-2 text-sm text-gold" role="status">
             <span>{m.notice}</span>

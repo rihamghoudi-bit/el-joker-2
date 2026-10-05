@@ -92,17 +92,19 @@ HCS message (one chunk, < 1 KB, no personal data, no prices, no documents):
 {"e":"evt_…","eh":"<eventHash>","h":"<evidenceHash>","m":"msn_…","p":"eljoker","ph":"<previousEventHash>","pv":"2.0.0+…","s":3,"t":"GUARDIAN_APPROVED","ts":"…","v":"1"}
 ```
 
-Verification (`verifyMissionTrail`) for every event:
-1. recompute `evidenceHash` from the payload **as currently stored** in SQLite;
-2. recompute `eventHash`;
-3. check `previousEventHash` links to the previous event;
-4. fetch the HCS message from the **Mirror Node** by topic + sequence number and compare `h`, `eh`, `ph`, `e`.
+Verification (`verifyMissionTrail`):
+1. **List** every message on the topic since the mission was created (Mirror Node `/api/v1/topics/{id}/messages`, paginated) and keep the ones whose `m` is this mission, keyed by `eventId`. The listing is retried while the Mirror Node is still indexing.
+2. For every local event: recompute `evidenceHash` from the payload **as currently stored** in SQLite, recompute `eventHash`, check the `previousEventHash` link, and compare `h`, `eh`, `ph`, `e` with the ledger message found **by eventId** (falls back to the stored sequence number). The local anchor metadata must point at that same message; missing metadata is backfilled from the ledger (erasing it hides nothing).
+3. **Completeness**: any proof on the ledger whose local event no longer exists is reported as deleted history.
 
-Result per event: `VALID` · `TAMPERED` · `PENDING` (not yet indexed / Mirror unreachable) · `MISSING_PROOF`. Overall: `VALID` · `TAMPERING_DETECTED` · `PENDING` · `UNVERIFIABLE`. A detected tamper is itself recorded as `TAMPER_DETECTED` on HCS.
+Result per event: `VALID` · `TAMPERED` · `PENDING` (not yet indexed / Mirror unreachable) · `MISSING_PROOF`. Overall: `VALID` · `TAMPERING_DETECTED` (any tampered **or deleted** event) · `PENDING` · `UNVERIFIABLE`. A detected tamper is itself recorded as `TAMPER_DETECTED` on HCS (once per distinct set of affected events).
 
-**Why not just a database?** The demo includes two tamper modes:
+**Why not just a database?** The demo includes three tamper modes:
 - *Edit evidence* — local hash check already fails.
-- *Insider rewrites hashes too* — payload changed **and** the whole local chain recomputed. Every local check passes; only the comparison with the Hedera consensus record fails. That is the attack a normal database cannot detect.
+- *Insider rewrites hashes too* — payload changed **and** the whole local chain recomputed. Every local check passes; only the comparison with the Hedera consensus record fails.
+- *Delete last event* — e.g. the payment record or a blocked attempt is erased. The remaining chain is perfectly consistent; only the ledger listing shows a proof with no local event.
+
+The last two are the attacks a normal database (even with its own hash chain) cannot detect.
 
 ## Payment safety (KANAWITA)
 
@@ -112,9 +114,13 @@ Before any transfer KANAWITA, independently of its caller:
 3. requires a valid human approval (authorized actor, bound to the same input hash + policy version) whenever the policy demanded review;
 4. requires the mission to be unpaid and the idempotency key unused;
 5. (live mode) waits for the `GUARDIAN_APPROVED` proof to be **anchored on Hedera** — no proof, no payment;
-6. inserts the payment row (DB unique constraints) → `PAYMENT_INITIATED` proof → single-shot `TransferTransaction` (never re-signed on failure; receipt re-queried by the same transaction id) → receipt `SUCCESS` → `PAID` + `PAYMENT_CONFIRMED` proof → async Mirror Node confirmation. Any failure → `PAYMENT_FAILED` proof; never marked paid.
+6. computes the scaled demo settlement **from the authorized amount** (`offer USD / 1000 × DEMO_SETTLEMENT_HBAR_PER_1000_USD`, capped at `DEMO_SETTLEMENT_MAX_HBAR`; $4,150 → 1.0375 ℏ), inserts the payment row (DB unique constraints) → `PAYMENT_INITIATED` proof → single-shot `TransferTransaction` (never re-signed on failure; receipt re-queried by the same transaction id) → receipt `SUCCESS` → `PAID` + `PAYMENT_CONFIRMED` proof → async Mirror Node confirmation. Any failure → `PAYMENT_FAILED` proof; never marked paid.
 
 An in-process per-mission lock plus the DB constraints make concurrent double execution produce at most one payment (tested).
+
+## Human approvals
+
+High-risk decisions stop in `HUMAN_REVIEW`. An approval needs an authorized operator (`DEMO_OPERATORS`) **and** the operator PIN (`DEMO_OPERATOR_PIN`; documented demo default `0619` only when `DEMO_MODE=true`), compared in constant time with a 60 s lockout after 5 failures. The approval is stored once per mission and bound to the Guardian input hash + policy version it was given for; 3ASES re-runs with it, and an unauthorized, stale or rejected approval can never turn a review into a payment. This is a demo operator mode, not a production identity system.
 
 ## 3ASES policy (v2.0.0)
 

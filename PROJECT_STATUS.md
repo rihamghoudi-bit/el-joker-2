@@ -57,9 +57,10 @@ edited; the consensus record cannot — the verifier compares the two.
 hashes, checks links, and compares with the HCS message fetched from the Mirror Node → VALID /
 TAMPERING DETECTED.
 
-**Six demo scenarios.** A approved ($5,000 Gabès) · B budget block ($100) · C duplicate payment attack ·
-D unverified-but-cheap supplier rejected · E high-value mission → human review → approve/reject ·
-F local tampering detected against Hedera proof.
+**Demo scenarios.** A approved ($5,000 Gabès) · B budget block ($100) · C duplicate payment attack ·
+D unverified-but-cheap supplier rejected · E high-value mission → human review → approve/reject (operator + PIN) ·
+F local tampering (edited evidence, recomputed hash chain, deleted event) detected against the Hedera proof ·
+G recycled invoice from a verified supplier rejected (added after the code review).
 
 ## 2. Key decisions
 
@@ -68,11 +69,13 @@ F local tampering detected against Hedera proof.
 | New repo `C:\Projects\el-joker-2`, nothing reused from old TrustMesh code | Handoff requires a clean build |
 | npm workspaces: `packages/shared` (Zod domain), `apps/api` (Express), `apps/web` (Next.js) | Clear web/api split, shared typed models |
 | SQLite via built-in `node:sqlite` | Persistent, zero native build step on Windows |
-| Polling (≈1 s) instead of WebSockets | Simplest reliable live updates for a demo |
+| Polling (0.8–3 s, ETag-revalidated, payloads only on demand) instead of WebSockets | Simplest reliable live updates for a demo |
 | No smart contract | HCS + HBAR transfer + Mirror verification already cover proof & settlement; policy must stay deterministic off-chain code that judges can read. A contract would add risk without solving a stated requirement |
 | Simulated ledger adapter when Hedera credentials are missing | Lets everything run; labeled SIMULATED, never shows fake tx ids or HashScan links |
 | Nasnes is deterministic (mode `DETERMINISTIC`) | Verification must be independent from the AI it checks |
-| Scaled demo settlement (default 1 HBAR) | Shown explicitly in UI and proof |
+| Scaled demo settlement proportional to the authorized offer (0.25 ℏ per $1,000, cap 10 ℏ) | Paid amount stays tied to what 3ASES authorized; shown explicitly in UI and proof |
+| Demo operator PIN (server-side, lockout) | Approvals cannot be forged by sending an operator name; still labeled as demo auth |
+| Verification lists the topic (completeness) | Detects deleted events and altered anchor metadata, not only edited evidence |
 
 ## 3. Implementation plan
 
@@ -85,9 +88,10 @@ F local tampering detected against Hedera proof.
 | 5 | Human approval workflow | ✅ |
 | 6 | HCS proof layer, canonical hashing, audit chain, Mirror verification | ✅ (simulated ledger verified; live testnet blocked on credentials) |
 | 7 | KANAWITA safe testnet payment + idempotency | ✅ (simulated; live testnet blocked on credentials) |
-| 8 | Six demo scenarios | ✅ `npm run demo:check` 6/6 (simulated ledger, fallback AI) |
-| 9 | Tests + hardening | ✅ 76/76 tests |
+| 8 | Demo scenarios | ✅ `npm run demo:check` 8/8 (A–G + deleted-event check; simulated ledger, fallback AI) |
+| 9 | Tests + hardening | ✅ 90/90 API tests + 5/5 browser E2E (Playwright/Edge) |
 | 10 | UX polish, README, architecture, demo script | ✅ |
+| 11 | Code-review fixes (see §6) | ✅ |
 
 ## 4. Credentials / blocked real-integration steps
 
@@ -103,21 +107,43 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 **Remaining live gates (run by the owner, then report output):**
 1. `npm run hedera:setup` → add printed `HEDERA_TOPIC_ID=…` to `.env`
 2. `npm run test:testnet` (2 live tests: approved + blocked, Mirror verification, tamper detection)
-3. `npm run dev` then `npm run demo:check` → expect 6/6 with real tx ids / HashScan links
+3. `npm run demo` then `npm run demo:check` → expect 8/8 with real tx ids / HashScan links
 4. With `ANTHROPIC_API_KEY` set: header shows `AI: REAL`, LEMHAF chip `REAL AI · claude-opus-5-5`
 
 ## 5. Verification results (simulated ledger, no AI key)
 
 - `npm run typecheck` — clean (shared, api, web)
-- `npm test` — 76/76 passing (guardian 20, agents 19, proof 16, scenarios E2E 15, HTTP API 6)
-- `npm run build` — API bundle + Next.js production build succeed; built API boots and runs scenario B
-- `npm run demo:check` — 6/6 scenarios PASS against the running dev API
-- UI checked in the browser: scenario A (PAID), E (approval card → approve → PAID), F (tamper → TAMPERING DETECTED), responsive layout
+- `npm test` — 90/90 passing (guardian 20, agents 19, proof 16, scenarios 15, HTTP API 6, hardening 14)
+- `npm run test:e2e` — 5/5 passing in Microsoft Edge (landing→chat→A paid, D blocked, E wrong PIN refused then paid, F deletion detected, motion toggle)
+- `npm run build` — API bundle + Next.js production build succeed
+- `npm run demo:check` — 8/8 PASS against the running API
+- Layout checked at 1600×1000, 1280×720 (projector), 1100×800 (dashboard stacks under chat) and 375×812 (no horizontal scroll)
 
-## 6. Log
+## 6. Code-review fixes (2026-10-05)
+
+| # | Finding | Fix |
+|---|---|---|
+| 3 | Deleting the last event (or erasing anchor metadata) was not detected | Verification lists all topic messages for the mission, matches by eventId, reports deleted events and altered metadata; new tamper mode *Delete last event*; tests |
+| 4 | Anyone could approve by sending an operator name | Server-side operator PIN (constant-time, 5-try lockout); approvals disabled outside demo mode without a configured PIN; PIN field in the UI; tests |
+| 5 | Landing said “Five AI agents” (contradicts 3ASES/no-LLM) | “one AI researcher recommends, four rule-based agents verify, decide and pay” |
+| 6 | Dev server instability on stage | `npm run demo` (production build + start) documented as the stage command |
+| 7 | Heavy animated backdrop | Lighter blur; *Motion: off* toggle (no animation, no blur), remembered per browser |
+| 8 | Dashboard hidden below 1280 px; cramped at 720 px height | Dashboard stacks under the chat; compact composer on short screens; scrollable tabs/chips |
+| 9 | Paid amount unrelated to authorized amount | Settlement proportional to the offer (0.25 ℏ / $1,000, capped) |
+| 10 | Full state polled every 0.8 s | Payloads only for the audit view; ETag/304 revalidation |
+| 11 | Duplicate-invoice rule unreachable from the UI | Scenario G (verified supplier recycling an invoice from an earlier mission) |
+| 12 | Dead code, 400-line component | `useMissionControl` hook + ConversationPanel / Dashboard / HistoryList / PipelineStrip; removed StatusBoard, Hero, big lineup, dead select |
+| 13 | No frontend tests | Playwright E2E (5) using the installed Edge |
+| 14 | Stale docs | README, DEMO, ARCHITECTURE, this file updated |
+| 15 | Contrast, color-only status, emoji logo, USD only | Lighter text tokens, ✓/✕/! icons on chips, focus outline, aria labels, SVG logo, TND budgets (configurable demo rate) |
+| 1–2 | Live Hedera / real AI never run | **Still open — needs the owner** (see §4) |
+
+## 7. Log
 
 - 2026-10-05: Read handoff pack (master prompt, PDF, 3 diagrams, references). Created repo and plan.
 - 2026-10-05: Backend (agents, guardian, proof layer, payments) + 15 E2E tests. Commit 24a4854.
 - 2026-10-05: Next.js mission room, full test suite (76), demo-check, hedera:setup, testnet test. Fixed tsup stripping `node:` from `node:sqlite`. Commit ed48902.
 - 2026-10-05: README, ARCHITECTURE, DEMO docs.
 - 2026-10-05: `.env` created with Hedera account/key/payee. `hedera:setup` failed inside the Claude Code sandbox (gRPC DEADLINE_EXCEEDED; TCP 50211 blocked). Live testnet steps handed to the owner.
+- 2026-10-05: UI redesigns (glass slabs, landing + ChatGPT-style chat, mascots, English-only agent messages).
+- 2026-10-05: Code-review fixes §6: 90 API tests, 5 browser E2E, demo-check 8/8.
