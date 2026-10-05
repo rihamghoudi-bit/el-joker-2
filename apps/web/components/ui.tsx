@@ -29,9 +29,15 @@ export function toneFor(label: string): Tone {
   return "gray";
 }
 
+const TONE_ICON: Partial<Record<Tone, string>> = { green: "✓", red: "✕", amber: "!" };
+
+/** Status chip. Tone comes from the label; an icon repeats the meaning so it never relies on color alone. */
 export function Chip({ label, tone, className }: { label: string; tone?: Tone; className?: string }) {
+  const t = tone ?? toneFor(label);
+  const icon = TONE_ICON[t];
   return (
-    <span className={cx("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase ring-1 ring-inset whitespace-nowrap", TONES[tone ?? toneFor(label)], className)}>
+    <span className={cx("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase ring-1 ring-inset whitespace-nowrap", TONES[t], className)}>
+      {icon && <span aria-hidden className="text-[10px]">{icon}</span>}
       {label}
     </span>
   );

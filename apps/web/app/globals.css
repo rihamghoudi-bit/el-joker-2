@@ -10,8 +10,8 @@
   --color-ink-850: #10101c;
   --color-ink-800: #161626;
   --color-ink-700: #23233a;
-  --color-ink-600: #33334f;
-  --color-ink-400: #8a8aa8;
+  --color-ink-600: #5a5a7c;
+  --color-ink-400: #a0a0bf;
   --color-ink-300: #b4b4cc;
   --color-ink-100: #ececf6;
 
@@ -116,5 +116,22 @@ html, body {
   background: linear-gradient(180deg, rgba(18, 16, 40, 0.72), rgba(8, 8, 18, 0.78));
   border: 1px solid rgba(140, 128, 255, 0.22);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 20px 60px -20px rgba(40, 30, 160, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(8px) saturate(1.15);
+}
+
+/* "Reduce motion" toggle (top bar): static backdrop, no blur — smoother on projectors and low-end laptops. */
+[data-motion="off"] .slab,
+[data-motion="off"] .slab-plane,
+[data-motion="off"] .mascot {
+  animation: none !important;
+}
+[data-motion="off"] .glass {
+  backdrop-filter: none;
+  background: rgba(10, 10, 22, 0.94);
+}
+
+/* Keyboard focus that is visible on the dark theme */
+:focus-visible {
+  outline: 2px solid #8b80ff;
+  outline-offset: 2px;
 }

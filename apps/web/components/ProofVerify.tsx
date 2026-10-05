@@ -1,7 +1,7 @@
 "use client";
 import type { EventVerification, MissionState, PublicConfig } from "@eljoker/shared";
 import { useState } from "react";
-import type { TamperResult } from "@/lib/api";
+import type { TamperMode, TamperResult } from "@/lib/api";
 import { cx, shortHash } from "@/lib/format";
 import { Button, Chip, ExtLink } from "./ui";
 
@@ -46,7 +46,7 @@ function EventRow({ v, highlight }: { v: EventVerification; highlight: boolean }
   );
 }
 
-export function ProofVerify({ state, config, onVerify, onTamper }: { state: MissionState; config: PublicConfig | null; onVerify: () => Promise<void>; onTamper: (mode: "EDIT_EVIDENCE" | "REWRITE_HASHES") => Promise<TamperResult | null> }) {
+export function ProofVerify({ state, config, onVerify, onTamper }: { state: MissionState; config: PublicConfig | null; onVerify: () => Promise<void>; onTamper: (mode: TamperMode) => Promise<TamperResult | null> }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [tamper, setTamper] = useState<TamperResult | null>(null);
   const report = state.lastVerification;
@@ -102,6 +102,14 @@ export function ProofVerify({ state, config, onVerify, onTamper }: { state: Miss
         >
           🕶 Insider rewrites hashes too
         </Button>
+        <Button
+          variant="ghost"
+          disabled={busy !== null || !config?.demoMode || state.auditEvents.length === 0 || pendingAnchors}
+          title="Erases the latest event from the local database — the remaining chain stays consistent; only the ledger listing catches it"
+          onClick={() => run("tamper3", async () => setTamper(await onTamper("DELETE_LAST_EVENT")))}
+        >
+          🗑 Delete last event
+        </Button>
         <Chip label="Demo only" tone="gold" />
       </div>
 
@@ -129,6 +137,32 @@ export function ProofVerify({ state, config, onVerify, onTamper }: { state: Miss
           {report.events.map((v) => (
             <EventRow key={v.eventId} v={v} highlight={tamper?.eventId === v.eventId} />
           ))}
+          {report.missingLocalEvents.map((m) => (
+            <div key={m.eventId} className="grid gap-3 rounded-xl border-2 border-dashed border-tn-red/70 bg-tn-red/[0.08] p-3 md:grid-cols-[1fr_1fr_190px]">
+              <div>
+                <div className="mb-1 text-[10.5px] font-bold tracking-widest text-ink-400 uppercase">Local record · #{m.sequence ?? "?"} {m.eventType}</div>
+                <div className="text-[13px] font-semibold text-[#ff8a94]">✕ Missing — deleted from the local database</div>
+              </div>
+              <div className="min-w-0">
+                <div className="mb-1 text-[10.5px] font-bold tracking-widest text-ink-400 uppercase">{report.ledgerMode === "LIVE_TESTNET" ? "Hedera proof (Mirror Node)" : "Simulated ledger proof"}</div>
+                <div className="grid gap-0.5 text-[11px] text-ink-400">
+                  <span>proof still on the ledger · seq #{m.ledgerSequenceNumber}</span>
+                  {m.consensusTimestamp && <span>consensus {m.consensusTimestamp}</span>}
+                  {m.hashscanUrl && <ExtLink href={m.hashscanUrl}>HashScan</ExtLink>}
+                </div>
+              </div>
+              <div className="flex flex-col items-start gap-1">
+                <div className="text-[10.5px] font-bold tracking-widest text-ink-400 uppercase">Result</div>
+                <Chip label="TAMPERING DETECTED" />
+                <span className="text-[11px] text-[#ff5c6a]">History was deleted locally</span>
+              </div>
+            </div>
+          ))}
+          {report.ledgerEventCount != null && (
+            <p className="px-1 text-[12px] text-ink-400">
+              Completeness: the ledger holds {report.ledgerEventCount} proof(s) for this mission; {report.events.length} local event(s) were checked{report.missingLocalEvents.length ? `, ${report.missingLocalEvents.length} missing locally` : ", none missing"}.
+            </p>
+          )}
         </div>
       )}
       {!report && <p className="text-sm text-ink-400">Run a verification to compare the local record with the ledger proof.</p>}

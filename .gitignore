@@ -14,3 +14,5 @@ apps/web/next-env.d.ts
 coverage/
 .DS_Store
 *.log
+apps/web/test-results/
+apps/web/playwright-report/

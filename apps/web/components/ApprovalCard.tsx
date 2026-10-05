@@ -4,10 +4,11 @@ import { useState } from "react";
 import { usd } from "@/lib/format";
 import { Button, Chip, Panel } from "./ui";
 
-export function ApprovalCard({ state, config, onDecide }: { state: MissionState; config: PublicConfig | null; onDecide: (decision: "APPROVED" | "REJECTED", reason: string, actorId: string) => Promise<void> }) {
+export function ApprovalCard({ state, config, onDecide }: { state: MissionState; config: PublicConfig | null; onDecide: (decision: "APPROVED" | "REJECTED", reason: string, actorId: string, pin: string) => Promise<void> }) {
   const operators = config?.operators ?? [];
   const [actor, setActor] = useState(operators[0] ?? "");
   const [reason, setReason] = useState("");
+  const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const g = state.guardianDecision;
   const offer = state.offers.find((o) => o.offerId === state.recommendation?.recommendedOfferId);
@@ -15,11 +16,12 @@ export function ApprovalCard({ state, config, onDecide }: { state: MissionState;
   const lemhaf = state.agentRuns.find((r) => r.agent === "LEMHAF");
   const reviewEvent = [...state.auditEvents].reverse().find((e) => e.eventType === "HUMAN_REVIEW_REQUIRED");
 
+  const ready = reason.trim().length >= 5 && !!actor && pin.trim().length >= 4 && config?.operatorAuth !== "DISABLED";
   const decide = async (d: "APPROVED" | "REJECTED") => {
     setBusy(true);
     try {
-      await onDecide(d, reason.trim(), actor);
-      setReason("");
+      await onDecide(d, reason.trim(), actor, pin.trim());
+      setPin("");
     } finally {
       setBusy(false);
     }
@@ -60,11 +62,23 @@ export function ApprovalCard({ state, config, onDecide }: { state: MissionState;
           Reason (required, recorded on the audit trail)
           <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Need confirmed by field team; supplier capacity checked" className="resize-none rounded-lg border border-ink-700 bg-ink-950 p-2 text-ink-100 placeholder:text-ink-600 focus:border-amber focus:outline-none" />
         </label>
+        <label className="grid gap-1 text-[12px] text-ink-400">
+          Operator PIN
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="••••"
+            className="rounded-lg border border-ink-700 bg-ink-950 p-2 tracking-[0.4em] text-ink-100 placeholder:text-ink-600 focus:border-amber focus:outline-none"
+          />
+        </label>
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="success" disabled={busy || reason.trim().length < 5 || !actor} onClick={() => decide("APPROVED")}>✓ Approve</Button>
-          <Button variant="danger" disabled={busy || reason.trim().length < 5 || !actor} onClick={() => decide("REJECTED")}>✕ Reject</Button>
+          <Button variant="success" disabled={busy || !ready} onClick={() => decide("APPROVED")}>✓ Approve</Button>
+          <Button variant="danger" disabled={busy || !ready} onClick={() => decide("REJECTED")}>✕ Reject</Button>
         </div>
-        <p className="text-[10.5px] text-ink-400">Demo operator mode: no production authentication. Operators are configured via DEMO_OPERATORS on the server.</p>
+        <p className="text-[10.5px] text-ink-400">Demo operator mode: authorized operator + PIN checked on the server (5 wrong PINs lock the mission for a minute). Not a production identity system.</p>
       </div>
     </Panel>
   );

@@ -2,7 +2,7 @@
 import type { ScenarioInfo } from "@eljoker/shared";
 import { cx } from "@/lib/format";
 
-const LETTER_COLORS: Record<string, string> = { A: "#22c55e", B: "#e70013", C: "#f59e0b", D: "#a78bfa", E: "#2ea3f2", F: "#f5b700" };
+const LETTER_COLORS: Record<string, string> = { A: "#22c55e", B: "#e70013", C: "#f59e0b", D: "#a78bfa", E: "#2ea3f2", F: "#f5b700", G: "#2dd4bf" };
 
 /**
  * ChatGPT-style input. The text is pre-filled with a ready-made request; the scenario chips swap it.
@@ -22,15 +22,16 @@ export function ChatComposer(props: {
   return (
     <div className="grid gap-3">
       {props.showChips && props.scenarios.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="scroll-thin flex gap-2 overflow-x-auto pb-1">
           {props.scenarios.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => props.onPick(s)}
               title={s.pitch}
+              aria-label={`Scenario ${s.letter}: ${s.title}`}
               className={cx(
-                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] transition",
+                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] whitespace-nowrap transition",
                 props.selected === s.id ? "border-indigo bg-indigo/20 text-white" : "border-white/10 bg-white/[0.03] text-ink-300 hover:border-white/25 hover:text-white",
               )}
             >

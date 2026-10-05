@@ -259,7 +259,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     title: "High-risk human review",
     pitch: "2,000 displaced people in Médenine. Budget $20,000 — above the autonomous limit.",
     expected: "3ASES → HUMAN_REVIEW_REQUIRED. Payment stays stopped until an operator approves (or rejects).",
-    followUp: "Approve or reject in the Human Approval card.",
+    followUp: "Payment is on hold: approve or reject in the approval card at the end of the conversation (demo PIN in the README).",
     draft: () => ({
       description: "Water and essential medicine for 2,000 displaced people in Médenine.",
       location: "Médenine",

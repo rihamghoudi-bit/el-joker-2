@@ -10,7 +10,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       </h1>
       <p className="mt-4 font-display text-xl tracking-[0.3em] text-gold uppercase">5aliha 3lina</p>
       <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-ink-300 md:text-xl">
-        Five AI agents run your emergency procurement — research, verification, a deterministic guardian, human approval and payment — and every decision is proven on Hedera.
+        Five agents handle your emergency procurement: one AI researcher recommends, four rule-based agents verify, decide and pay — humans approve high-risk spending, and every decision is proven on Hedera.
         <span className="mt-2 block font-semibold text-white">Autonomous, but never uncontrolled.</span>
       </p>
       <button
