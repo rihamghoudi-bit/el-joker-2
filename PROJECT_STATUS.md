@@ -89,14 +89,22 @@ F local tampering detected against Hedera proof.
 | 9 | Tests + hardening | ✅ 76/76 tests |
 | 10 | UX polish, README, architecture, demo script | ✅ |
 
-## 4. Credentials still required (blocked real-integration steps)
+## 4. Credentials / blocked real-integration steps
 
-| Variable | Needed for | Status |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | REAL_AI path | not provided |
-| `HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY` | HCS + payment on testnet | not provided |
-| `HEDERA_TOPIC_ID` | HCS topic (can be created by `npm run hedera:setup`) | not provided |
-| `HEDERA_PAYEE_ACCOUNT_ID` | Demo supplier receiving account (testnet) | not provided |
+| Variable | Status (2026-10-05) |
+|---|---|
+| `HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY` | ✅ in local `.env` (copied from the old TrustMesh `.env` with the owner's approval; never printed) |
+| `HEDERA_PAYEE_ACCOUNT_ID` | ✅ in local `.env` (old `SUPPLIER_ACCOUNT_ID`) |
+| `HEDERA_TOPIC_ID` | ⛔ not yet created — `npm run hedera:setup` must run from a terminal with gRPC access to Hedera (port 50211). Claude Code's sandbox blocks raw TCP to consensus nodes (Mirror Node HTTPS works), so this step is for the owner to run |
+| `ANTHROPIC_API_KEY` | ⛔ owner will add to `.env` |
+
+Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (live mode needs account + key + topic).
+
+**Remaining live gates (run by the owner, then report output):**
+1. `npm run hedera:setup` → add printed `HEDERA_TOPIC_ID=…` to `.env`
+2. `npm run test:testnet` (2 live tests: approved + blocked, Mirror verification, tamper detection)
+3. `npm run dev` then `npm run demo:check` → expect 6/6 with real tx ids / HashScan links
+4. With `ANTHROPIC_API_KEY` set: header shows `AI: REAL`, LEMHAF chip `REAL AI · claude-opus-5-5`
 
 ## 5. Verification results (simulated ledger, no AI key)
 
@@ -112,3 +120,4 @@ F local tampering detected against Hedera proof.
 - 2026-10-05: Backend (agents, guardian, proof layer, payments) + 15 E2E tests. Commit 24a4854.
 - 2026-10-05: Next.js mission room, full test suite (76), demo-check, hedera:setup, testnet test. Fixed tsup stripping `node:` from `node:sqlite`. Commit ed48902.
 - 2026-10-05: README, ARCHITECTURE, DEMO docs.
+- 2026-10-05: `.env` created with Hedera account/key/payee. `hedera:setup` failed inside the Claude Code sandbox (gRPC DEADLINE_EXCEEDED; TCP 50211 blocked). Live testnet steps handed to the owner.
