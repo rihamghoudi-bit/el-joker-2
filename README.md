@@ -169,6 +169,16 @@ el-joker-2/
 └─ PROJECT_STATUS.md
 ```
 
+## Live on Hedera testnet
+
+- Proof topic: [`0.0.11007004`](https://hashscan.io/testnet/topic/0.0.11007004) — every decision of every mission is anchored there.
+- Verified 2026-10-12: `npm run test:testnet` 2/2, `npm run demo:check` 8/8 on testnet with real Claude (`claude-opus-5-5`).
+- Example payment (scenario A, 1.0375 HBAR, memo `eljoker:<mission>:<idempotency>`): [HashScan](https://hashscan.io/testnet/transaction/0.0.10569347-1791831141-287680039).
+
+## License
+
+Code: [MIT](LICENSE) © 2026 Chain619. The agent mascot artwork belongs to Chain619. The Hedera logo is a trademark of its owner, shown only to indicate the integration.
+
 ## Troubleshooting
 
 | Symptom | Fix |
