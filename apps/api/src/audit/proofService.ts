@@ -299,14 +299,26 @@ export class ProofService {
     return { eventId: event.eventId, eventType: event.eventType, sequence: event.sequence, status, local, ledger: ledgerView, checks: { evidenceHashIntact, eventHashIntact, chainLinkValid, matchesLedger }, problems };
   }
 
-  /** Every proof the ledger holds for this mission, keyed by eventId (first occurrence wins). */
-  private async ledgerRecordsFor(missionId: string, sinceIso: string | null): Promise<Map<string, { msg: LedgerMessage; rec: LedgerRecord }>> {
-    const out = new Map<string, { msg: LedgerMessage; rec: LedgerRecord }>();
+  /**
+   * Every proof the ledger holds for this mission, grouped by eventId. One event can legitimately appear more than
+   * once: when a receipt times out after the message already reached consensus, the retry publishes an identical copy.
+   */
+  private async ledgerRecordsFor(missionId: string, sinceIso: string | null): Promise<Map<string, { msg: LedgerMessage; rec: LedgerRecord }[]>> {
+    const out = new Map<string, { msg: LedgerMessage; rec: LedgerRecord }[]>();
     for (const msg of await this.ledger.listTopicMessages(sinceIso)) {
       const rec = parseLedgerMessage(msg.message);
-      if (rec && rec.m === missionId && !out.has(rec.e)) out.set(rec.e, { msg, rec });
+      if (!rec || rec.m !== missionId) continue;
+      const list = out.get(rec.e) ?? [];
+      list.push({ msg, rec });
+      out.set(rec.e, list);
     }
     return out;
+  }
+
+  /** The copy the local anchor points at (if it exists on the ledger), else the first one. */
+  private pickLedgerCopy(copies: { msg: LedgerMessage; rec: LedgerRecord }[] | undefined, localSeq: number | null): LedgerMessage | null {
+    if (!copies?.length) return null;
+    return (copies.find((c) => c.msg.sequenceNumber === localSeq) ?? copies.at(0)!).msg;
   }
 
   /**
@@ -323,7 +335,7 @@ export class ProofService {
 
     // List the mission's proofs from the ledger. On testnet the Mirror Node may lag a few seconds: retry until
     // every locally-anchored event is visible (or attempts run out; per-event lookup then falls back to the sequence number).
-    let byEvent = new Map<string, { msg: LedgerMessage; rec: LedgerRecord }>();
+    let byEvent = new Map<string, { msg: LedgerMessage; rec: LedgerRecord }[]>();
     let ledgerEventCount: number | null = null;
     const attempts = live ? (this.opts.mirrorAttempts ?? 6) : 1;
     for (let i = 0; i < attempts; i++) {
@@ -341,12 +353,13 @@ export class ProofService {
     const results: EventVerification[] = [];
     let expectedPrev = GENESIS_HASH;
     for (const ev of events) {
-      results.push(await this.verifyProof(ev, expectedPrev, byEvent.get(ev.eventId)?.msg ?? null));
+      results.push(await this.verifyProof(ev, expectedPrev, this.pickLedgerCopy(byEvent.get(ev.eventId), ev.anchor.sequenceNumber)));
       expectedPrev = ev.eventHash;
     }
 
     const localIds = new Set(events.map((e) => e.eventId));
     const missingLocalEvents: MissingLocalEvent[] = [...byEvent.values()]
+      .map((copies) => copies.at(0)!)
       .filter(({ rec }) => !localIds.has(rec.e))
       .map(({ msg, rec }) => ({
         eventId: rec.e,

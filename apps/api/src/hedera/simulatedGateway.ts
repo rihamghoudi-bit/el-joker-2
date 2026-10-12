@@ -13,6 +13,8 @@ export class SimulatedGateway implements LedgerGateway {
   readonly payeeAccountId = null;
   /** Test hook: make the next N submits fail. */
   failNextSubmits = 0;
+  /** Test hook: the message reaches the ledger but the receipt is "lost" (the caller sees an error and retries). */
+  lostReceiptNextSubmits = 0;
   failNextTransfer = false;
 
   constructor(private readonly store: Store) {}
@@ -23,6 +25,10 @@ export class SimulatedGateway implements LedgerGateway {
       throw new Error("Simulated ledger outage");
     }
     const { sequenceNumber, consensusTimestamp } = this.store.appendSimulatedMessage(this.topicId, message);
+    if (this.lostReceiptNextSubmits > 0) {
+      this.lostReceiptNextSubmits -= 1;
+      throw new Error("Receipt timed out (message already on the ledger)");
+    }
     return { topicId: this.topicId, sequenceNumber, transactionId: null, consensusTimestamp };
   }
 

@@ -155,3 +155,4 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 - 2026-10-05: UI redesigns (glass slabs, landing + ChatGPT-style chat, mascots, English-only agent messages).
 - 2026-10-05: Code-review fixes §6: 90 API tests, 5 browser E2E, demo-check 8/8.
 - 2026-10-12: Owner created topic 0.0.11007004; `test:testnet` 2/2 on Hedera testnet; payment and proofs confirmed on Mirror Node and HashScan. Fixed `--payee` argument forwarding in the root `hedera:setup` script.
+- 2026-10-12: Live `demo:check` found a false TAMPERING_DETECTED on scenario A: the first HCS submit reached consensus (#12) but its receipt timed out, the retry published an identical copy (#13), and verification compared the local anchor with the first copy. Fix: verification picks the ledger copy the local anchor points at; HCS submit re-queries the receipt of the same transaction instead of republishing. Regression test added (91 tests).

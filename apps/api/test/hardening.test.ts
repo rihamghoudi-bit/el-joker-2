@@ -51,6 +51,18 @@ describe("Trail completeness (ledger listing)", () => {
     expect(app.store.getAuditEvent(ev.eventId)!.anchor.sequenceNumber).toBe(ev.anchor.sequenceNumber);
   });
 
+  it("a retried anchor (receipt lost after consensus) leaves a duplicate copy — not a false tampering alarm", async () => {
+    app = await makeTestApp();
+    (app as AppServices & { sim: { lostReceiptNextSubmits: number } }).sim.lostReceiptNextSubmits = 1;
+    const { missionId } = await runScenarioToRest(app, "A_APPROVED");
+    const first = app.store.listAuditEvents(missionId)[0]!;
+    // the ledger holds two identical copies of MISSION_CREATED; the local anchor points at the second one
+    expect(app.store.listSimulatedMessages(null).filter((m) => m.message.includes(first.eventId))).toHaveLength(2);
+    const report = await app.missions.verifyMission(missionId);
+    expect(report.overall).toBe("VALID");
+    expect(report.missingLocalEvents).toHaveLength(0);
+  });
+
   it("does not mix proofs from other missions on the same topic", async () => {
     app = await makeTestApp();
     const a = await runScenarioToRest(app, "A_APPROVED");

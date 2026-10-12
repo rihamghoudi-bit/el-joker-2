@@ -82,7 +82,15 @@ export class HederaSdkGateway implements LedgerGateway {
   async submitMessage(message: string): Promise<SubmitResult> {
     try {
       const response = await new TopicMessageSubmitTransaction().setTopicId(TopicId.fromString(this.topicId)).setMessage(message).execute(this.client);
-      const receipt = await response.getReceipt(this.client);
+      let receipt;
+      try {
+        receipt = await response.getReceipt(this.client);
+      } catch (receiptErr) {
+        // The message may already be on the ledger: ask again for the receipt of the SAME transaction
+        // instead of publishing a duplicate copy.
+        logger.warn("hedera.hcs_receipt_retry", { txId: response.transactionId.toString(), error: receiptErr });
+        receipt = await new TransactionReceiptQuery().setTransactionId(response.transactionId).execute(this.client);
+      }
       if (receipt.status !== Status.Success) throw new LedgerError(`HCS submit status ${receipt.status.toString()}`);
       return {
         topicId: this.topicId,
