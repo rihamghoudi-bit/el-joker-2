@@ -15,7 +15,7 @@
     "test": "npm run test -w apps/api",
     "test:testnet": "npm run test:testnet -w apps/api",
     "demo:check": "npm run demo:check -w apps/api",
-    "hedera:setup": "npm run hedera:setup -w apps/api",
+    "hedera:setup": "npm run hedera:setup -w apps/api --",
     "seed": "npm run seed -w apps/api",
     "test:e2e": "npm run test:e2e -w apps/web",
     "demo": "npm run build && npm start"

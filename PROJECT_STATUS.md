@@ -99,7 +99,7 @@ G recycled invoice from a verified supplier rejected (added after the code revie
 |---|---|
 | `HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY` | ✅ in local `.env` (copied from the old TrustMesh `.env` with the owner's approval; never printed) |
 | `HEDERA_PAYEE_ACCOUNT_ID` | ✅ in local `.env` (old `SUPPLIER_ACCOUNT_ID`) |
-| `HEDERA_TOPIC_ID` | ⛔ not yet created — `npm run hedera:setup` must run from a terminal with gRPC access to Hedera (port 50211). Claude Code's sandbox blocks raw TCP to consensus nodes (Mirror Node HTTPS works), so this step is for the owner to run |
+| `HEDERA_TOPIC_ID` | ✅ `0.0.11007004` created by the owner with `npm run hedera:setup` (2026-10-12) |
 | `ANTHROPIC_API_KEY` | ⛔ owner will add to `.env` |
 
 Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (live mode needs account + key + topic).
@@ -119,6 +119,12 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 - `npm run demo:check` — 8/8 PASS against the running API
 - Layout checked at 1600×1000, 1280×720 (projector), 1100×800 (dashboard stacks under chat) and 375×812 (no horizontal scroll)
 
+### Live Hedera testnet (2026-10-12, run by the owner)
+
+- `npm run test:testnet` — 2/2 passed (approved mission + blocked mission)
+- Topic `0.0.11007004`: 11 proofs, verified independently on the Mirror Node (MISSION_CREATED → … → PAYMENT_CONFIRMED → TAMPER_DETECTED; second mission → GUARDIAN_BLOCKED)
+- Payment `0.0.10569347@1791831141.287680039`: SUCCESS, 1.0375 HBAR to `0.0.10813331` (proportional to the $4,150 offer), memo `eljoker:<mission>:<idempotency prefix>`, fee 0.00111838 HBAR — HashScan link opens correctly
+
 ## 6. Code-review fixes (2026-10-05)
 
 | # | Finding | Fix |
@@ -136,7 +142,8 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 | 13 | No frontend tests | Playwright E2E (5) using the installed Edge |
 | 14 | Stale docs | README, DEMO, ARCHITECTURE, this file updated |
 | 15 | Contrast, color-only status, emoji logo, USD only | Lighter text tokens, ✓/✕/! icons on chips, focus outline, aria labels, SVG logo, TND budgets (configurable demo rate) |
-| 1–2 | Live Hedera / real AI never run | **Still open — needs the owner** (see §4) |
+| 1 | Live Hedera never run | ✅ Done 2026-10-12: `test:testnet` 2/2 on testnet (see §5) |
+| 2 | Real AI never run | **Still open — needs `ANTHROPIC_API_KEY`** |
 
 ## 7. Log
 
@@ -147,3 +154,4 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 - 2026-10-05: `.env` created with Hedera account/key/payee. `hedera:setup` failed inside the Claude Code sandbox (gRPC DEADLINE_EXCEEDED; TCP 50211 blocked). Live testnet steps handed to the owner.
 - 2026-10-05: UI redesigns (glass slabs, landing + ChatGPT-style chat, mascots, English-only agent messages).
 - 2026-10-05: Code-review fixes §6: 90 API tests, 5 browser E2E, demo-check 8/8.
+- 2026-10-12: Owner created topic 0.0.11007004; `test:testnet` 2/2 on Hedera testnet; payment and proofs confirmed on Mirror Node and HashScan. Fixed `--payee` argument forwarding in the root `hedera:setup` script.
