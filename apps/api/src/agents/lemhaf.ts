@@ -34,6 +34,7 @@ How to rank:
 - Hard requirement: delivery time must fit within the hours remaining before the mission deadline. Offers that miss the deadline rank below offers that meet it.
 - Then prefer offers that cover all requested items, then lower total price, then faster delivery.
 - Supplier "claims" are self-declared marketing statements, not evidence.
+- Prices, line totals and offer totals are computed and checked by the system: use them as given, do not recompute them.
 
 Boundaries:
 - You only recommend. You cannot approve, authorize or execute payments. An independent verifier (NASNES) and a deterministic policy engine (3ASES) decide.
@@ -58,7 +59,8 @@ function buildUserPrompt(mission: Mission, offers: Offer[], suppliers: Map<strin
         supplierName: s?.name ?? o.supplierId,
         supplierRegion: s?.region,
         supplierClaims: s?.claims ?? [],
-        items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice })),
+        // Line totals are given (already checked by code) so the model never has to redo the arithmetic.
+        items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice, lineTotalUsd: i.lineTotal })),
         totalPriceUsd: o.totalPrice,
         deliveryTimeHours: o.deliveryTimeHours,
       };

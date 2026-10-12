@@ -144,7 +144,7 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 | 14 | Stale docs | README, DEMO, ARCHITECTURE, this file updated |
 | 15 | Contrast, color-only status, emoji logo, USD only | Lighter text tokens, ✓/✕/! icons on chips, focus outline, aria labels, SVG logo, TND budgets (configurable demo rate) |
 | 1 | Live Hedera never run | ✅ Done 2026-10-12: `test:testnet` 2/2 on testnet (see §5) |
-| 2 | Real AI never run | **Still open — needs `ANTHROPIC_API_KEY`** |
+| 2 | Real AI never run | ✅ Done 2026-10-12: Lemhaf REAL_AI · claude-opus-5-5 (5.6–9 s) on A, D, G |
 
 ## 7. Log
 
@@ -158,3 +158,4 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 - 2026-10-12: Owner created topic 0.0.11007004; `test:testnet` 2/2 on Hedera testnet; payment and proofs confirmed on Mirror Node and HashScan. Fixed `--payee` argument forwarding in the root `hedera:setup` script.
 - 2026-10-12: Live `demo:check` found a false TAMPERING_DETECTED on scenario A: the first HCS submit reached consensus (#12) but its receipt timed out, the retry published an identical copy (#13), and verification compared the local anchor with the first copy. Fix: verification picks the ledger copy the local anchor points at; HCS submit re-queries the receipt of the same transaction instead of republishing. Regression test added (91 tests).
 - 2026-10-12: Live `demo:check` 8/8 PASS on Hedera testnet with the production build.
+- 2026-10-12: Real AI live (`claude-opus-5-5`). A: Claude picks Oasis $4,150, paid 1.0375 HBAR, 6/6 proofs. D: Claude picks Sahel and itself flags fraud risk; Nasnes rejects, 3ases blocks. G: Claude picks Kairouan; Nasnes rejects the recycled invoice. Claude mis-added line items in a G concern → line totals are now sent to the model with an instruction not to recompute them.
