@@ -123,6 +123,7 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 
 - `npm run test:testnet` — 2/2 passed (approved mission + blocked mission)
 - Topic `0.0.11007004`: 11 proofs, verified independently on the Mirror Node (MISSION_CREATED → … → PAYMENT_CONFIRMED → TAMPER_DETECTED; second mission → GUARDIAN_BLOCKED)
+- `npm run demo` + `npm run demo:check` on testnet — **8/8 PASS** (after the duplicate-anchor fix): A VALID (6/6 anchored, 1.0375 HBAR), B/D/G blocked with no payment, C replay refused (one payment), E paid 4.15 HBAR after operator+PIN approval, F edited evidence and deleted event both detected; every payment confirmed on the Mirror Node
 - Payment `0.0.10569347@1791831141.287680039`: SUCCESS, 1.0375 HBAR to `0.0.10813331` (proportional to the $4,150 offer), memo `eljoker:<mission>:<idempotency prefix>`, fee 0.00111838 HBAR — HashScan link opens correctly
 
 ## 6. Code-review fixes (2026-10-05)
@@ -156,3 +157,4 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 - 2026-10-05: Code-review fixes §6: 90 API tests, 5 browser E2E, demo-check 8/8.
 - 2026-10-12: Owner created topic 0.0.11007004; `test:testnet` 2/2 on Hedera testnet; payment and proofs confirmed on Mirror Node and HashScan. Fixed `--payee` argument forwarding in the root `hedera:setup` script.
 - 2026-10-12: Live `demo:check` found a false TAMPERING_DETECTED on scenario A: the first HCS submit reached consensus (#12) but its receipt timed out, the retry published an identical copy (#13), and verification compared the local anchor with the first copy. Fix: verification picks the ledger copy the local anchor points at; HCS submit re-queries the receipt of the same transaction instead of republishing. Regression test added (91 tests).
+- 2026-10-12: Live `demo:check` 8/8 PASS on Hedera testnet with the production build.
