@@ -146,6 +146,8 @@ export function useMissionControl() {
     guard(async () => {
       if (!state) return;
       await api.approve(state.mission.missionId, { decision, reason, actorId, pin });
+      // The "approve or reject" hint has done its job.
+      setNotice(null);
       await refreshNow();
     });
 

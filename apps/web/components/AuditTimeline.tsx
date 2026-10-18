@@ -11,6 +11,8 @@ const EVENT_TONE: Record<string, string> = {
   TAMPER_DETECTED: "border-tn-red",
   HUMAN_REJECTED: "border-tn-red",
   HUMAN_REVIEW_REQUIRED: "border-amber",
+  PAYMENT_SCHEDULED: "border-teal",
+  PAYMENT_CANCELLED: "border-amber",
   PAYMENT_CONFIRMED: "border-mint",
   GUARDIAN_APPROVED: "border-mint",
   HUMAN_APPROVED: "border-mint",

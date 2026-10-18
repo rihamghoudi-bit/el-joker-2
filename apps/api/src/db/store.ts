@@ -111,7 +111,28 @@ CREATE TABLE IF NOT EXISTS simulated_ledger (
   message TEXT NOT NULL,
   consensus_timestamp TEXT NOT NULL
 );
+-- SIMULATED vault schedules (same rule: only without Hedera credentials).
+CREATE TABLE IF NOT EXISTS simulated_schedules (
+  n INTEGER PRIMARY KEY AUTOINCREMENT,
+  schedule_id TEXT NOT NULL UNIQUE,
+  data TEXT NOT NULL
+);
+-- A payment locked in the vault (SCHEDULED) still holds its slot; a cancelled one releases it like a failed one.
+DROP INDEX IF EXISTS payments_one_live_per_mission;
+DROP INDEX IF EXISTS payments_one_live_per_invoice;
+CREATE UNIQUE INDEX IF NOT EXISTS payments_one_open_per_mission ON payments(mission_id) WHERE status NOT IN ('FAILED', 'CANCELLED');
+CREATE UNIQUE INDEX IF NOT EXISTS payments_one_open_per_invoice ON payments(invoice_id) WHERE status NOT IN ('FAILED', 'CANCELLED') AND invoice_id IS NOT NULL;
 `;
+
+export interface SimulatedSchedule {
+  to: string;
+  amount: number;
+  memo: string;
+  signers: string[];
+  executed: boolean;
+  deleted: boolean;
+  executedAt: string | null;
+}
 
 type Row = Record<string, unknown>;
 const j = (v: unknown) => JSON.stringify(v);
@@ -270,8 +291,18 @@ export class Store {
     const r = this.db.prepare("SELECT data FROM payments WHERE idempotency_key = ?").get(key) as Row | undefined;
     return r ? p<Payment>(r.data) : null;
   }
+  /** A payment holding this invoice: committed, moved, or locked in the vault (not failed or cancelled). */
   findLivePaymentByInvoice(invoiceId: string): Payment | null {
-    const r = this.db.prepare("SELECT data FROM payments WHERE invoice_id = ? AND status <> 'FAILED' LIMIT 1").get(invoiceId) as Row | undefined;
+    const r = this.db.prepare("SELECT data FROM payments WHERE invoice_id = ? AND status NOT IN ('FAILED', 'CANCELLED') LIMIT 1").get(invoiceId) as Row | undefined;
+    return r ? p<Payment>(r.data) : null;
+  }
+  /** Remove a reservation that never reached the ledger (vault lock failed): nothing was committed, nothing to keep. */
+  deleteUncommittedPayment(paymentId: string) {
+    this.db.prepare("DELETE FROM payments WHERE payment_id = ? AND status = 'SCHEDULED'").run(paymentId);
+  }
+  /** The payment locked in the vault for this mission, if any. */
+  findScheduledPayment(missionId: string): Payment | null {
+    const r = this.db.prepare("SELECT data FROM payments WHERE mission_id = ? AND status = 'SCHEDULED' LIMIT 1").get(missionId) as Row | undefined;
     return r ? p<Payment>(r.data) : null;
   }
 
@@ -355,6 +386,20 @@ export class Store {
       ? this.db.prepare("SELECT * FROM simulated_ledger WHERE consensus_timestamp >= ? ORDER BY sequence_number").all(sinceIso)
       : this.db.prepare("SELECT * FROM simulated_ledger ORDER BY sequence_number").all()) as Row[];
     return rows.map((r) => ({ sequenceNumber: Number(r.sequence_number), message: String(r.message), consensusTimestamp: String(r.consensus_timestamp), topicId: String(r.topic_id) }));
+  }
+
+  createSimulatedSchedule(s: SimulatedSchedule): string {
+    const row = this.db.prepare("SELECT COALESCE(MAX(n), 0) + 1 AS next FROM simulated_schedules").get() as Row;
+    const scheduleId = `SIM-SCHEDULE-${Number(row.next)}`;
+    this.db.prepare("INSERT INTO simulated_schedules (schedule_id, data) VALUES (?, ?)").run(scheduleId, j(s));
+    return scheduleId;
+  }
+  getSimulatedSchedule(scheduleId: string): SimulatedSchedule | null {
+    const r = this.db.prepare("SELECT data FROM simulated_schedules WHERE schedule_id = ?").get(scheduleId) as Row | undefined;
+    return r ? p<SimulatedSchedule>(r.data) : null;
+  }
+  updateSimulatedSchedule(scheduleId: string, s: SimulatedSchedule) {
+    this.db.prepare("UPDATE simulated_schedules SET data = ? WHERE schedule_id = ?").run(j(s), scheduleId);
   }
 
   /** DEMO-ONLY: an insider deletes a historical event from the local database. */

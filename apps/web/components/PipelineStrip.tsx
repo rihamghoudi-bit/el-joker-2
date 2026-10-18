@@ -23,11 +23,11 @@ function agentState(agent: AgentName, s: MissionState | null): { st: St; note: s
       if (!s.guardianDecision) return { st: "idle", note: "waiting" };
       return s.guardianDecision.decision === "APPROVED" ? { st: "done", note: "approved" } : s.guardianDecision.decision === "BLOCKED" ? { st: "blocked", note: "blocked" } : { st: "review", note: "human review" };
     case "KANAWITA": {
-      const p = s.payments.find((x) => x.status !== "FAILED") ?? s.payments[0];
+      const p = s.payments.find((x) => x.status !== "FAILED" && x.status !== "CANCELLED") ?? s.payments[0];
       if (p?.status === "CONFIRMED") return { st: "done", note: p.mode === "SIMULATED" ? "paid (simulated)" : "paid on testnet" };
       if (p?.status === "FAILED") return { st: "blocked", note: "payment failed" };
       if (["BLOCKED", "REJECTED"].includes(m.status)) return { st: "blocked", note: "no payment" };
-      if (m.status === "HUMAN_REVIEW") return { st: "review", note: "on hold" };
+      if (m.status === "HUMAN_REVIEW") return { st: "review", note: p?.status === "SCHEDULED" ? "locked in vault" : "on hold" };
       return { st: "idle", note: "waiting" };
     }
     default:

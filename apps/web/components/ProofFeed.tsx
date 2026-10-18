@@ -15,10 +15,12 @@ const LABEL: Record<string, string> = {
   HUMAN_REVIEW_REQUIRED: "Human review required",
   HUMAN_APPROVED: "Human approved",
   HUMAN_REJECTED: "Human rejected",
+  PAYMENT_SCHEDULED: "Payment locked in vault",
   PAYMENT_INITIATED: "Payment initiated",
   PAYMENT_CONFIRMED: "Payment confirmed",
   PAYMENT_FAILED: "Payment failed",
   PAYMENT_BLOCKED: "Payment blocked",
+  PAYMENT_CANCELLED: "Vault schedule deleted",
   TAMPER_DETECTED: "Tampering detected",
 };
 const BAD = /BLOCKED|REJECTED|FAILED|TAMPER/;

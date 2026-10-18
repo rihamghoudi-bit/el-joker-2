@@ -37,12 +37,12 @@ export const AiMissionExtraction = z.object({
 });
 export type AiMissionExtraction = z.infer<typeof AiMissionExtraction>;
 
-const EXTRACTION_SYSTEM = `You are LEM3ALEM, the mission planner of EL JOKER, an emergency procurement system.
+const EXTRACTION_SYSTEM = `You are LEM3ALEM, the mission planner of EL JOKER, a procurement control system for NGOs and companies.
 Extract a procurement mission from the operator's request.
 Rules:
 - Only report facts that are explicitly stated. If location, number of people, budget, deadline or urgency is not stated, return null for it. Never guess them.
 - maximumBudgetUsd is the budget amount as written; set budgetCurrency to "TND" if it is in Tunisian dinars (TND, DT, dinars), "USD" if in dollars.
-- items: list the supplies requested. Use category WATER, MEDICINE, FOOD, HYGIENE, SHELTER, ELECTRONICS or OTHER. Set quantity only if the request states it, otherwise null.
+- items: list the supplies requested. Use category WATER, MEDICINE, FOOD, HYGIENE, SHELTER, ELECTRONICS, OFFICE (office supplies, furniture) or OTHER. Set quantity only if the request states it, otherwise null.
 - description: one neutral sentence summarizing the need, without personal data.
 - You do not approve or authorize anything; you only structure the request.`;
 
@@ -71,7 +71,10 @@ export function ruleBasedExtraction(text: string): AiMissionExtraction {
   if (/hygiene|soap/i.test(text)) items.push({ category: "HYGIENE", name: "Hygiene kit", quantity: null, unit: "kit" });
   if (/food|meal/i.test(text)) items.push({ category: "FOOD", name: "Food parcel", quantity: null, unit: "parcel" });
   if (/tent|shelter/i.test(text)) items.push({ category: "SHELTER", name: "Shelter kit", quantity: null, unit: "kit" });
-  if (/laptop|phone|electronic/i.test(text)) items.push({ category: "ELECTRONICS", name: "Electronics", quantity: null, unit: "unit" });
+  if (/laptop/i.test(text)) items.push({ category: "ELECTRONICS", name: "Business laptop", quantity: null, unit: "unit" });
+  if (/monitor|screen/i.test(text)) items.push({ category: "ELECTRONICS", name: "Monitor", quantity: null, unit: "unit" });
+  if (!/laptop|monitor|screen/i.test(text) && /phone|electronic/i.test(text)) items.push({ category: "ELECTRONICS", name: "Electronics", quantity: null, unit: "unit" });
+  if (/paper|stationery|office suppl/i.test(text)) items.push({ category: "OFFICE", name: "Printer paper & stationery pack", quantity: null, unit: "pack" });
   const urgency = /critical|immediately|urgent|rush|asap/i.test(text) ? (/critical|rush/i.test(text) ? "CRITICAL" : "HIGH") : null;
   return {
     description: text.trim().slice(0, 300),

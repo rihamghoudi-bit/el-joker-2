@@ -79,6 +79,13 @@ export function ProofVerify({ state, config, onVerify, onTamper }: { state: Miss
           <b className="text-ink-100">A normal app can edit its own history — even recompute its own hashes. It cannot rewrite the consensus record.</b> Verification recomputes everything from the local database and compares it with what the Mirror Node returns.
         </p>
         {!live && <p className="mt-2 text-[12px] text-amber">Hedera credentials are not configured: proofs are written to a clearly labeled SIMULATED ledger. Configure .env to anchor on testnet.</p>}
+        <p className="mt-2 text-[13px] text-ink-300">
+          Don&apos;t trust this server either:{" "}
+          <a href={`/verify?mission=${state.mission.missionId}`} target="_blank" rel="noreferrer" className="font-semibold text-teal underline decoration-teal/40 underline-offset-2">
+            open the public verifier ↗
+          </a>{" "}
+          — your own browser recomputes every hash and reads the Mirror Node directly.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

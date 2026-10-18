@@ -11,6 +11,10 @@ import {
   type GuardianDecision,
   type Mission,
   type MissionState,
+  ORGANIZATIONS,
+  type OrganizationId,
+  organizationOf,
+  type ProofBundle,
   type Supplier,
   type TrailVerification,
 } from "@eljoker/shared";
@@ -25,7 +29,7 @@ import { logger } from "../logger";
 import { DEMO_SUPPLIERS, getScenario, HISTORICAL_OFFERS } from "../seed/demoData";
 import { approvalEvidence, buildGuardianSnapshot, postFeed } from "../agents/context";
 import { evaluate } from "../agents/guardian/engine";
-import type { LoadedPolicy } from "../agents/guardian/policy";
+import type { PolicyRegistry } from "../agents/guardian/policy";
 import { Kanawita } from "../agents/kanawita";
 import { planMission } from "../agents/lem3alem";
 import { runLemhaf } from "../agents/lemhaf";
@@ -45,7 +49,7 @@ export interface MissionServiceDeps {
   ai: AiClient;
   ledger: LedgerGateway;
   proofs: ProofService;
-  policy: LoadedPolicy;
+  policies: PolicyRegistry;
   stepDelayMs?: number;
 }
 
@@ -59,7 +63,7 @@ export class MissionService {
   private currentAgent = new Map<string, AgentName | null>();
 
   constructor(private readonly deps: MissionServiceDeps) {
-    this.kanawita = new Kanawita({ store: deps.store, proofs: deps.proofs, ledger: deps.ledger, policy: deps.policy, config: deps.config });
+    this.kanawita = new Kanawita({ store: deps.store, proofs: deps.proofs, ledger: deps.ledger, policies: deps.policies, config: deps.config });
   }
 
   seedSuppliers() {
@@ -73,7 +77,9 @@ export class MissionService {
 
   async createMission(req: CreateMissionRequest, scenarioId: string | null = null, requestText: string | null = null): Promise<{ missionId: string; status: Mission["status"]; missingFields: string[] }> {
     const { store, ai } = this.deps;
-    const plan = await planMission(req, ai, { tndPerUsd: this.deps.config.tndPerUsd });
+    // Which organization spends decides which policy applies. Free text that names ACME goes to ACME.
+    const organizationId: OrganizationId = req.organizationId ?? req.mission?.organizationId ?? (req.text && /\bacme\b/i.test(req.text) ? "ACME_PROCUREMENT" : "NGO_RELIEF");
+    const plan = await planMission({ ...req, mission: { ...(req.mission ?? {}), organizationId } }, ai, { tndPerUsd: this.deps.config.tndPerUsd });
     const missionId = newId("msn");
     const draft = plan.draft;
     const mission: Mission = {
@@ -91,6 +97,7 @@ export class MissionService {
       status: plan.status === "CREATED" ? "CREATED" : "NEEDS_INFORMATION",
       scenarioId,
       isDemo: scenarioId !== null,
+      organizationId,
     };
     store.insertMission(mission, plan.missingFields);
     // The operator's request opens the conversation, exactly as it was sent.
@@ -120,10 +127,13 @@ export class MissionService {
         urgency: mission.urgency,
         constraints: mission.constraints,
         scenarioId,
+        organizationId,
+        policy: { name: this.deps.policies.get(organizationId).name, version: this.deps.policies.get(organizationId).effectiveVersion },
         planner: { mode: plan.mode, model: plan.model },
       },
     });
-    postFeed(store, missionId, "LEM3ALEM", "status", `Team, we have a new mission: ${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")}, ${mission.beneficiaries.toLocaleString("en-US")} people, ${mission.location}.`, ["MISSION CREATED", modeChip(plan.mode, plan.model)], { notes: plan.notes });
+    const org = ORGANIZATIONS[organizationId];
+    postFeed(store, missionId, "LEM3ALEM", "status", `Team, we have a new mission for ${org.name}: ${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")}, ${mission.beneficiaries.toLocaleString("en-US")} ${org.peopleLabel}, ${mission.location}.`, ["MISSION CREATED", org.shortName.toUpperCase(), modeChip(plan.mode, plan.model)], { notes: plan.notes, organizationId });
 
     this.startPipeline(missionId);
     return { missionId, status: mission.status, missingFields: [] };
@@ -137,8 +147,9 @@ export class MissionService {
   }
 
   async submitApproval(missionId: string, req: ApprovalRequest): Promise<{ decision: GuardianDecision["decision"] }> {
-    const { store, config, policy, proofs } = this.deps;
+    const { store, config, proofs } = this.deps;
     const mission = this.mustGet(missionId);
+    const policy = this.deps.policies.forMission(mission);
     if (mission.status !== "HUMAN_REVIEW") throw new DomainError("NOT_IN_REVIEW", `Mission is ${mission.status}, not awaiting human review`, 409);
     if (!config.operators.includes(req.actorId)) throw new DomainError("UNAUTHORIZED_OPERATOR", `"${req.actorId}" is not an authorized operator`, 403);
     this.checkPin(missionId, req.pin);
@@ -146,6 +157,7 @@ export class MissionService {
     if (!last || last.decision !== "HUMAN_REVIEW_REQUIRED") throw new DomainError("NO_REVIEW_DECISION", "No pending Guardian review decision", 409);
     // The approval binds to the exact facts the operator reviewed.
     const fresh = buildGuardianSnapshot(store, missionId, this.deps.ledger.payeeAccountId);
+    // Locking the payment in the vault must not change these facts (a SCHEDULED payment is reserved, not live).
     const freshHash = evaluate(fresh.input, policy).inputHash;
     if (freshHash !== last.inputHash) throw new DomainError("STALE_REVIEW", "Mission facts changed since the review was requested", 409);
 
@@ -167,6 +179,8 @@ export class MissionService {
         await this.runKanawita(missionId, "AFTER_HUMAN_APPROVAL");
       } else {
         store.setMissionStatus(missionId, req.decision === "REJECTED" ? "REJECTED" : "BLOCKED");
+        // A payment locked in the vault is deleted on the ledger: the funds are never released.
+        await this.kanawita.cancelVault(missionId, req.decision === "REJECTED" ? `Rejected by ${req.actorId}: ${req.reason}` : "3ASES blocked the mission after review");
       }
       this.currentAgent.set(missionId, null);
     })().catch((e) => this.fail(missionId, e));
@@ -202,6 +216,62 @@ export class MissionService {
       postFeed(store, missionId, "NASNES", "proof", report.ledgerMode === "LIVE_TESTNET" ? `Proof verified: ${report.summary}.` : `Local chain verified against the SIMULATED ledger (no Hedera credentials): ${report.summary}.`, [report.ledgerMode === "LIVE_TESTNET" ? "PROOF VERIFIED" : "PROOF VERIFIED · SIMULATED"]);
     }
     return report;
+  }
+
+  /**
+   * Everything needed to check a mission without trusting this server: the events with their raw evidence, the
+   * payments and where their proofs live. The public verifier recomputes every hash in the browser and compares them
+   * with what it reads itself from the Hedera Mirror Node.
+   */
+  async getProofBundle(missionId: string): Promise<ProofBundle> {
+    const { store, ledger, config } = this.deps;
+    const mission = this.mustGet(missionId);
+    await this.deps.proofs.idle(missionId);
+    const events = store.listAuditEvents(missionId).map((e) => ({
+      schemaVersion: e.schemaVersion,
+      eventId: e.eventId,
+      missionId: e.missionId,
+      sequence: e.sequence,
+      eventType: e.eventType,
+      agent: e.agent,
+      policyVersion: e.policyVersion,
+      timestamp: e.timestamp,
+      evidenceHash: e.evidenceHash,
+      previousEventHash: e.previousEventHash,
+      eventHash: e.eventHash,
+      summary: e.summary,
+      payloadJson: store.getRawPayload(e.eventId) ?? "{}",
+      anchor: { status: e.anchor.status, sequenceNumber: e.anchor.sequenceNumber, transactionId: e.anchor.transactionId, consensusTimestamp: e.anchor.consensusTimestamp },
+    }));
+    const live = ledger.mode === "LIVE_TESTNET";
+    const since = new Date(Date.parse(mission.createdAt) - 5 * 60_000).toISOString();
+    return {
+      missionId,
+      organizationId: organizationOf(mission),
+      description: mission.description,
+      missionStatus: mission.status,
+      missionCreatedAt: mission.createdAt,
+      generatedAt: new Date().toISOString(),
+      ledgerMode: ledger.mode,
+      topicId: live ? ledger.topicId : null,
+      mirrorNodeUrl: config.hedera.mirrorNodeUrl,
+      events,
+      payments: store.listPayments(missionId).map((p) => ({
+        paymentId: p.paymentId,
+        status: p.status,
+        source: p.source ?? "OPERATOR",
+        amountUsd: p.amount,
+        settlementAmount: p.settlementAmount,
+        settlementCurrency: p.settlementCurrency,
+        settlementTokenId: p.settlementTokenId ?? null,
+        payeeAccountId: p.payeeAccountId,
+        vaultAccountId: p.vaultAccountId ?? null,
+        hederaTransactionId: p.hederaTransactionId,
+        scheduleId: p.scheduleId ?? null,
+      })),
+      // Without Hedera credentials there is no independent ledger to read: hand over the stand-in's copies, labeled.
+      simulatedLedger: live ? null : (await ledger.listTopicMessages(since)).map((m) => ({ sequenceNumber: m.sequenceNumber, consensusTimestamp: m.consensusTimestamp, message: m.message })),
+    };
   }
 
   tamper(missionId: string, mode: TamperMode) {
@@ -325,7 +395,7 @@ export class MissionService {
       recommendation: lem.recommendation,
       invoiceReusedElsewhere: top.invoiceId ? store.findOffersByInvoice(top.invoiceId, missionId).length > 0 : false,
       invoiceAlreadyPaid: top.invoiceId ? (store.findLivePaymentByInvoice(top.invoiceId)?.missionId ?? missionId) !== missionId : false,
-      suspiciousBelowPct: this.deps.policy.priceAnomaly.reviewBelowPct,
+      suspiciousBelowPct: this.deps.policies.forMission(mission).priceAnomaly.reviewBelowPct,
     });
     store.insertVerification(verification);
     this.recordRun({ missionId, agent: "NASNES", mode: "DETERMINISTIC", status: verification.status === "VERIFIED" ? "DONE" : "BLOCKED", input: { offer: top, recommendation: lem.recommendation }, summary: `${verification.status}: ${verification.checks.filter((c) => c.passed).length}/${verification.checks.length} checks passed` });
@@ -358,7 +428,10 @@ export class MissionService {
     }
     if (decision.decision === "HUMAN_REVIEW_REQUIRED") {
       store.setMissionStatus(missionId, "HUMAN_REVIEW");
-      postFeed(store, missionId, "KANAWITA", "status", "Payment stays stopped until an authorized operator decides.", ["PAYMENT ON HOLD"]);
+      // Above the autonomous limit: lock the payment on Hedera with the agents' signature only (1 of 2).
+      this.currentAgent.set(missionId, "KANAWITA");
+      const locked = await this.kanawita.lockInVault(missionId, "AT_REVIEW");
+      if (!locked) postFeed(store, missionId, "KANAWITA", "status", "Payment stays stopped until an authorized operator decides.", ["PAYMENT ON HOLD"]);
       this.currentAgent.set(missionId, null);
       return;
     }
@@ -369,7 +442,8 @@ export class MissionService {
   }
 
   private async runGuardian(missionId: string): Promise<GuardianDecision> {
-    const { store, policy, config, proofs } = this.deps;
+    const { store, config, proofs } = this.deps;
+    const policy = this.deps.policies.forMission(store.getMission(missionId));
     this.currentAgent.set(missionId, "3ASES");
     postFeed(store, missionId, "3ASES", "working", "Rules are rules. Applying policy " + policy.effectiveVersion + " — deterministic rules, no AI.", ["EVALUATING"]);
     await this.pause();
@@ -398,6 +472,8 @@ export class MissionService {
         approvalId: decision.approvalId,
         offer: snap.offer ? { offerId: snap.offer.offerId, supplierId: snap.offer.supplierId, supplierName, totalPrice: snap.offer.totalPrice, invoiceId: snap.offer.invoiceId } : null,
         maximumBudget: snap.mission.maximumBudget,
+        organizationId: organizationOf(snap.mission),
+        policyName: policy.name,
         engine: "deterministic (no LLM)",
       },
     });

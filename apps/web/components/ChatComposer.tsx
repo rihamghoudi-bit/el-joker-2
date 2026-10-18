@@ -1,8 +1,9 @@
 "use client";
-import type { ScenarioInfo } from "@eljoker/shared";
+import { ORGANIZATIONS, type ScenarioInfo } from "@eljoker/shared";
+import { Fragment } from "react";
 import { cx } from "@/lib/format";
 
-const LETTER_COLORS: Record<string, string> = { A: "#22c55e", B: "#e70013", C: "#f59e0b", D: "#a78bfa", E: "#2ea3f2", F: "#f5b700", G: "#2dd4bf" };
+const LETTER_COLORS: Record<string, string> = { A: "#22c55e", B: "#e70013", C: "#f59e0b", D: "#a78bfa", E: "#2ea3f2", F: "#f5b700", G: "#2dd4bf", H: "#e2e8f0", I: "#67e8f9" };
 
 /**
  * ChatGPT-style input. The text is pre-filled with a ready-made request; the scenario chips swap it.
@@ -22,10 +23,13 @@ export function ChatComposer(props: {
   return (
     <div className="grid gap-3 [@media(max-height:820px)]:gap-2">
       {props.showChips && props.scenarios.length > 0 && (
-        <div className="scroll-thin flex gap-2 overflow-x-auto pb-1">
-          {props.scenarios.map((s) => (
+        <div className="scroll-thin flex items-center gap-2 overflow-x-auto pb-1">
+          {props.scenarios.map((s, i) => (
+            <Fragment key={s.id}>
+            {(i === 0 || props.scenarios[i - 1]!.organizationId !== s.organizationId) && (
+              <span className="shrink-0 pl-1 text-[10.5px] font-semibold tracking-[0.14em] whitespace-nowrap text-ink-400 uppercase">{ORGANIZATIONS[s.organizationId].shortName}</span>
+            )}
             <button
-              key={s.id}
               type="button"
               onClick={() => props.onPick(s)}
               title={s.pitch}
@@ -40,6 +44,7 @@ export function ChatComposer(props: {
               </span>
               {s.title}
             </button>
+            </Fragment>
           ))}
         </div>
       )}
@@ -67,7 +72,7 @@ export function ChatComposer(props: {
           ↑
         </button>
       </div>
-      <p className="text-center text-[11px] text-ink-400 [@media(max-height:820px)]:hidden">AI recommends — it never authorizes money. 3ases decides with deterministic rules; every decision is anchored on Hedera.</p>
+      <p className="text-center text-[11px] text-ink-400 [@media(max-height:820px)]:hidden">AI recommends — it never authorizes money. 3ases decides with deterministic rules; above the limit only a human co-signature on Hedera releases the funds.</p>
     </div>
   );
 }

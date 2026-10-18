@@ -10,6 +10,7 @@ import {
   Mission,
   MissionDraft,
   Offer,
+  OrganizationId,
   Payment,
   Recommendation,
   Supplier,
@@ -17,11 +18,22 @@ import {
   VerificationResult,
 } from "./domain";
 
-export const ScenarioId = z.enum(["A_APPROVED", "B_BUDGET_BLOCK", "C_DUPLICATE_PAYMENT", "D_UNVERIFIED_SUPPLIER", "E_HUMAN_REVIEW", "F_TAMPERING", "G_RECYCLED_INVOICE"]);
+export const ScenarioId = z.enum([
+  "A_APPROVED",
+  "B_BUDGET_BLOCK",
+  "C_DUPLICATE_PAYMENT",
+  "D_UNVERIFIED_SUPPLIER",
+  "E_HUMAN_REVIEW",
+  "F_TAMPERING",
+  "G_RECYCLED_INVOICE",
+  "H_ACME_SUPPLIES",
+  "I_ACME_LAPTOPS",
+]);
 export type ScenarioId = z.infer<typeof ScenarioId>;
 
 export const ScenarioInfo = z.object({
   id: ScenarioId,
+  organizationId: OrganizationId,
   letter: z.string(),
   title: z.string(),
   pitch: z.string(),
@@ -38,6 +50,8 @@ export const CreateMissionRequest = z
     text: z.string().min(10).max(2000).optional(),
     /** Structured mission (preferred, e.g. from the composer). */
     mission: MissionDraft.partial().optional(),
+    /** Which organization (and therefore which spending policy) the mission is for. */
+    organizationId: OrganizationId.optional(),
   })
   .refine((v) => v.text !== undefined || v.mission !== undefined, { message: "Provide text or mission" });
 export type CreateMissionRequest = z.infer<typeof CreateMissionRequest>;
@@ -58,9 +72,22 @@ export const MissionSummary = z.object({
   maximumBudget: z.number(),
   status: Mission.shape.status,
   scenarioId: z.string().nullable(),
+  organizationId: OrganizationId,
   createdAt: z.string(),
 });
 export type MissionSummary = z.infer<typeof MissionSummary>;
+
+export const PolicySummary = z.object({
+  organizationId: OrganizationId,
+  name: z.string(),
+  version: z.string(),
+  autonomousLimitUsd: z.number(),
+  maxTransactionUsd: z.number(),
+  humanReviewRiskLevel: z.string(),
+  allowedRegions: z.array(z.string()),
+  allowedCategories: z.array(z.string()),
+});
+export type PolicySummary = z.infer<typeof PolicySummary>;
 
 export const MissionState = z.object({
   mission: Mission,
@@ -98,8 +125,24 @@ export const PublicConfig = z.object({
     payeeAccountId: z.string().nullable(),
     mirrorNodeUrl: z.string(),
     topicHashscanUrl: z.string().nullable(),
+    /** Multi-signature vault holding the funds above the autonomous limit. */
+    vault: z.object({
+      enabled: z.boolean(),
+      accountId: z.string().nullable(),
+      threshold: z.string(),
+      hashscanUrl: z.string().nullable(),
+    }),
   }),
-  payment: z.object({ hbarPer1000Usd: z.number(), maxSettlementHbar: z.number() }),
+  payment: z.object({
+    hbarPer1000Usd: z.number(),
+    maxSettlementHbar: z.number(),
+    /** What payments settle in: scaled HBAR, or the HTS stablecoin at the full offer amount. */
+    asset: z.enum(["HBAR", "TOKEN"]),
+    symbol: z.string(),
+    tokenId: z.string().nullable(),
+    tokenHashscanUrl: z.string().nullable(),
+  }),
+  /** Policy of the default organization (kept for older clients). */
   policy: z.object({
     version: z.string(),
     autonomousLimitUsd: z.number(),
@@ -108,6 +151,7 @@ export const PublicConfig = z.object({
     allowedRegions: z.array(z.string()),
     allowedCategories: z.array(z.string()),
   }),
+  policies: z.array(PolicySummary),
   operators: z.array(z.string()),
   /** How approvals are authenticated. */
   operatorAuth: z.enum(["DEMO_PIN", "DISABLED"]),

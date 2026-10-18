@@ -8,7 +8,7 @@ const HOW_IT_WORKS: [AgentName, string][] = [
   ["LEMHAF", "The AI researcher: ranks supplier offers and explains trade-offs."],
   ["NASNES", "Independently verifies the registry, the evidence and the AI's claims."],
   ["3ASES", "Deterministic policy decides — no LLM."],
-  ["KANAWITA", "Pays on Hedera testnet only when authorized."],
+  ["KANAWITA", "Pays only when authorized. Above the limit, locks the payment in a 2-of-2 Hedera vault that only a human co-signature opens."],
 ];
 
 /** Right-hand live panel: key numbers, live Hedera proofs, actions. Stacks under the chat on smaller screens. */
@@ -45,6 +45,9 @@ export function Dashboard({ state, config, onVerify, onReplay }: { state: Missio
             🔁 Replay payment (attack)
           </Button>
           <p className="text-xs leading-relaxed text-ink-400">The replay goes through the same Kanawita checks as any payment. It is expected to be rejected: idempotency key + one live payment per mission, enforced by the database.</p>
+          <a href={`/verify?mission=${state.mission.missionId}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-teal/40 bg-teal/10 px-5 py-2.5 text-sm font-semibold text-teal transition hover:bg-teal/20">
+            Open the public verifier ↗
+          </a>
         </div>
       </Panel>
     </>

@@ -3,7 +3,7 @@
  * Ranks candidate offers and explains trade-offs. It RECOMMENDS; it can never authorize money.
  * REAL_AI when Claude answers; FALLBACK (rule-based, clearly labeled) otherwise.
  */
-import { type ExecutionMode, type Mission, type Offer, Recommendation, type Supplier } from "@eljoker/shared";
+import { type ExecutionMode, type Mission, type Offer, ORGANIZATIONS, organizationOf, Recommendation, type Supplier } from "@eljoker/shared";
 import { z } from "zod";
 import { type AiClient, AiUnavailableError } from "../ai/aiClient";
 import { canonicalize } from "../lib/canonical";
@@ -27,7 +27,7 @@ export const AiRecommendation = z.object({
   statedFacts: z.object({ supplierName: z.string(), totalPrice: z.number(), deliveryTimeHours: z.number(), claimsSupplierVerified: z.boolean() }),
 });
 
-const SYSTEM = `You are LEMHAF, the research analyst of EL JOKER, an emergency procurement system for humanitarian missions in Tunisia.
+const SYSTEM = `You are LEMHAF, the research analyst of EL JOKER, a procurement control system used by organizations in Tunisia (humanitarian NGOs and companies).
 You receive a mission and candidate supplier offers (fictional demo data). Rank every offer and recommend exactly one.
 
 How to rank:
@@ -44,6 +44,7 @@ Boundaries:
 function buildUserPrompt(mission: Mission, offers: Offer[], suppliers: Map<string, Supplier>): string {
   const view = {
     mission: {
+      organization: ORGANIZATIONS[organizationOf(mission)].name,
       description: mission.description,
       location: mission.location,
       beneficiaries: mission.beneficiaries,

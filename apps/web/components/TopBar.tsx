@@ -48,8 +48,13 @@ export function TopBar(props: { config: PublicConfig | null; view: View; onView:
               <Chip label={config.ai.configured ? `AI · ${config.ai.model}` : "AI · fallback"} tone={config.ai.configured ? "violet" : "amber"} />
               <Chip label={live ? `Hedera testnet · ${config.hedera.topicId}` : "Hedera · simulated"} tone={live ? "green" : "amber"} />
               {live && <ExtLink href={config.hedera.topicHashscanUrl}>topic</ExtLink>}
+              {config.hedera.vault.enabled && <Chip label={live ? `Vault 2-of-2 · ${config.hedera.vault.accountId}` : "Vault 2-of-2 · simulated"} tone="teal" />}
+              <Chip label={config.payment.asset === "TOKEN" ? `Pays in ${config.payment.symbol} (HTS)` : "Pays in HBAR (scaled)"} tone={config.payment.asset === "TOKEN" ? "green" : "gray"} />
             </>
           )}
+          <a href="/verify" className="rounded-xl border border-white/10 px-3 py-1.5 text-xs text-ink-300 transition hover:border-white/25 hover:text-white">
+            Public verifier
+          </a>
           <button
             type="button"
             onClick={props.onToggleMotion}

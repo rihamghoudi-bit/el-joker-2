@@ -118,6 +118,45 @@ Before any transfer KANAWITA, independently of its caller:
 
 An in-process per-mission lock plus the DB constraints make concurrent double execution produce at most one payment (tested).
 
+Settlement asset: with `HEDERA_STABLECOIN_TOKEN_ID` set, payments are **HTS token transfers of the full offer amount** (EJUSD, 2 decimals: $4,150 → 4,150.00 EJUSD); otherwise the scaled HBAR amount above.
+
+## The vault: Hedera enforces the human approval
+
+Within the autonomous limit KANAWITA pays from the agents' own account. Above it, the money is in a **vault account whose key is a 2-of-2 threshold key** (`KeyList([agents, approver], 2)`), created by `hedera:setup -- --vault`.
+
+```
+3ASES → HUMAN_REVIEW_REQUIRED
+  KANAWITA.lockInVault: payment row SCHEDULED (DB slot reserved, not "live")
+    ScheduleCreateTransaction(inner = transfer vault → payee, admin key = agents, payer = agents)
+    → signed by the agents' key = 1 of 2 · PAYMENT_SCHEDULED proof · "LOCKED ON HEDERA"
+operator approves (authorized actor + PIN, bound to the input hash)
+  3ASES re-runs → APPROVED → KANAWITA re-checks everything
+    PAYMENT_INITIATED proof → ScheduleSignTransaction signed with the approver key = 2 of 2
+    → Hedera executes the transfer in the same consensus round → receipt of the scheduled tx id SUCCESS
+    → PAID · PAYMENT_CONFIRMED proof (signatures "2 of 2")
+operator rejects
+  ScheduleDeleteTransaction (admin key) → payment CANCELLED · PAYMENT_CANCELLED proof
+```
+
+Design points:
+- A SCHEDULED payment is *reserved*, not live: it holds the DB unique slot (no second payment can be created) but does not count as "already paid" for 3ASES, so locking it does not change the facts the approval is bound to.
+- If locking fails at review time the reservation is removed (nothing reached the ledger) and the lock is retried at approval time — the transfer still needs both signatures.
+- A Hedera schedule expires (≈30 min by default). If the approver's signature finds it gone, KANAWITA creates a new schedule on the same payment row and co-signs that one.
+- Demo honesty: the approver key is held by the server and used only after operator + PIN. In production it lives in the approver's own wallet; the ledger-side guarantee is the same.
+
+## Organizations and policies
+
+`PolicyRegistry` loads one versioned policy file per organization (`policy.json` for the relief NGO, `policy.acme.json` for ACME Tunisia). A mission carries its `organizationId`; 3ASES, KANAWITA, NASNES' price tolerance and the policy version written into every proof (`pv`) all come from the mission's organization. Same agents, same topic, same proof format: the policy is the only thing that changes.
+
+## Public verifier (`/verify`)
+
+`GET /api/public/missions/:id/bundle` returns what the server claims: every event header with its **raw evidence text**, the payments and where their proofs live. The page then, entirely in the visitor's browser:
+1. reads the topic's messages for the mission **directly from the public Mirror Node** (no EL JOKER server in between);
+2. recomputes `SHA-256(canonical(evidence))` and the event hash with Web Crypto, checks every chain link, and compares them with the consensus records (`verifyBundle` in `packages/shared`, the same code the API tests run with `node:crypto`);
+3. checks completeness (a proof on the ledger missing from the bundle ⇒ deleted history) and that the ledger's own records are numbered 0..n-1 and linked;
+4. checks payments on the Mirror Node: transfer result, and for vault payments the schedule's `executed_timestamp` and signature count.
+In SIMULATED mode the server hands over its stand-in ledger copies and the page says the check is not independent.
+
 ## Human approvals
 
 High-risk decisions stop in `HUMAN_REVIEW`. An approval needs an authorized operator (`DEMO_OPERATORS`) **and** the operator PIN (`DEMO_OPERATOR_PIN`; documented demo default `0619` only when `DEMO_MODE=true`), compared in constant time with a 60 s lockout after 5 failures. The approval is stored once per mission and bound to the Guardian input hash + policy version it was given for; 3ASES re-runs with it, and an unauthorized, stale or rejected approval can never turn a review into a payment. This is a demo operator mode, not a production identity system.
@@ -145,7 +184,7 @@ Decision: any BLOCK ⇒ `BLOCKED`; else any REVIEW ⇒ `HUMAN_REVIEW_REQUIRED` (
 
 ## Why no smart contract
 
-HCS (ordered, timestamped, tamper-evident proofs) + a native HBAR `TransferTransaction` + Mirror Node verification already cover proof and settlement for this MVP. The authorization logic must remain readable, deterministic, versioned off-chain code that judges and auditors can inspect and unit-test; moving it into a contract would add deployment risk and gas/fee complexity without solving a stated requirement. A contract (or Hedera Scheduled Transactions for multi-signature release) becomes justified for real escrow or multi-party approval — listed as future work.
+HCS (ordered, timestamped, tamper-evident proofs), native transfers (HBAR or HTS), **scheduled transactions with a threshold key** (the human co-signature enforced by the ledger) and Mirror Node verification cover proof, settlement and multi-party release with native Hedera services. The authorization logic must remain readable, deterministic, versioned off-chain code that judges and auditors can inspect and unit-test; moving it into a contract would add deployment risk and fee complexity without solving a stated requirement.
 
 ## AI boundaries
 

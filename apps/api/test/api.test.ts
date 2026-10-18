@@ -19,10 +19,11 @@ describe("HTTP API", () => {
     expect(cfg.body.policy.autonomousLimitUsd).toBe(5000);
   });
 
-  it("lists the six scenarios", async () => {
+  it("lists the nine scenarios, for two organizations", async () => {
     svc = await makeTestApp();
     const res = await request(createApp(svc)).get("/api/scenarios");
-    expect(res.body.map((s: { letter: string }) => s.letter)).toEqual(["A", "B", "C", "D", "E", "F", "G"]);
+    expect(res.body.map((s: { letter: string }) => s.letter)).toEqual(["A", "B", "C", "D", "E", "F", "G", "H", "I"]);
+    expect(new Set(res.body.map((s: { organizationId: string }) => s.organizationId))).toEqual(new Set(["NGO_RELIEF", "ACME_PROCUREMENT"]));
   });
 
   it("POST /api/scenarios/:id/run returns immediately with a missionId (202)", async () => {
@@ -64,6 +65,7 @@ describe("HTTP API", () => {
     await svc.missions.idle(missionId);
     const res = await request(app).post(`/api/missions/${missionId}/approvals`).send({ decision: "APPROVED", reason: "trust me please", actorId: "intruder", pin: "0619" });
     expect(res.status).toBe(403);
-    expect(svc.store.listPayments(missionId)).toHaveLength(0);
+    // Only the vault reservation exists, still locked and waiting for the approver.
+    expect(svc.store.listPayments(missionId).map((p) => p.status)).toEqual(["SCHEDULED"]);
   });
 });

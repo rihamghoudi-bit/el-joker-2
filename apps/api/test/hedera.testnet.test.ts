@@ -19,6 +19,8 @@ describe.runIf(enabled)("Hedera testnet (live)", () => {
       const s = app.missions.getState(missionId);
       expect(s.mission.status).toBe("PAID");
       expect(s.payments[0]!.hederaTransactionId).toMatch(/^0\.0\.\d+@\d+\.\d+$/);
+      // Settles in the HTS stablecoin when configured (full amount), otherwise in scaled HBAR.
+      expect(s.payments[0]!.settlementCurrency).toBe(config.hedera.stablecoin?.symbol ?? "HBAR");
       expect(s.auditEvents.every((e) => e.anchor.status === "ANCHORED" && e.anchor.transactionId)).toBe(true);
       console.log("payment:", s.payments[0]!.hashscanUrl);
 
@@ -48,6 +50,37 @@ describe.runIf(enabled)("Hedera testnet (live)", () => {
       app.close();
     }
   });
+});
+
+const vaultEnabled = enabled && config.hedera.vaultConfigured;
+
+describe.runIf(vaultEnabled)("Hedera testnet vault (live)", () => {
+  it("above the limit: locked as a 2-of-2 schedule, executed by Hedera only after the approver co-signs", async () => {
+    const app = await bootstrap({ config: { ...config, databasePath: ":memory:", ai: { ...config.ai, enabled: false } }, store: new Store(":memory:"), stepDelayMs: 0 });
+    try {
+      const { missionId } = await app.missions.runScenario("E_HUMAN_REVIEW");
+      await app.missions.idle(missionId);
+      const locked = app.missions.getState(missionId).payments[0]!;
+      expect(locked).toMatchObject({ status: "SCHEDULED", source: "VAULT" });
+      expect(locked.scheduleId).toMatch(/^0\.0\.\d+$/);
+      console.log("schedule:", locked.scheduleHashscanUrl);
+      // Give the Mirror Node a moment, then check the schedule is pending with only the agents' signature.
+      await new Promise((r) => setTimeout(r, 6000));
+      expect(await app.ledger.fetchSchedule(locked.scheduleId!)).toMatchObject({ executed: false, deleted: false });
+
+      await app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "Live vault test", actorId: config.operators[0]!, pin: config.operatorPin ?? "0619" });
+      await app.missions.idle(missionId);
+      const paid = app.missions.getState(missionId).payments[0]!;
+      expect(paid.status).toBe("CONFIRMED");
+      console.log("payment:", paid.hashscanUrl);
+      await new Promise((r) => setTimeout(r, 6000));
+      const info = await app.ledger.fetchSchedule(locked.scheduleId!);
+      expect(info?.executed).toBe(true);
+      expect(info?.signatures).toBeGreaterThanOrEqual(2);
+    } finally {
+      app.close();
+    }
+  }, 180_000);
 });
 
 describe.skipIf(enabled)("Hedera testnet (skipped)", () => {

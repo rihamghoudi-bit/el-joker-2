@@ -48,11 +48,20 @@ const EnvSchema = z.object({
   AI_TIMEOUT_MS: num(45_000),
 
   HEDERA_NETWORK: z.string().default("testnet"),
+  /** "simulated" forces the local stand-in ledger even when credentials are present (offline rehearsal, previews). */
+  LEDGER_MODE: z.enum(["auto", "simulated"]).default("auto"),
   HEDERA_ACCOUNT_ID: optStr,
   HEDERA_PRIVATE_KEY: optStr,
   HEDERA_TOPIC_ID: optStr,
   HEDERA_PAYEE_ACCOUNT_ID: optStr,
   HEDERA_MIRROR_NODE_URL: z.string().default("https://testnet.mirrornode.hedera.com"),
+  /** 2-of-2 vault (operator key + approver key) holding the funds above the autonomous limit. */
+  HEDERA_VAULT_ACCOUNT_ID: optStr,
+  HEDERA_APPROVER_PRIVATE_KEY: optStr,
+  /** HTS stablecoin used for settlement (full offer amount instead of scaled HBAR). */
+  HEDERA_STABLECOIN_TOKEN_ID: optStr,
+  HEDERA_STABLECOIN_SYMBOL: z.string().default("EJUSD"),
+  HEDERA_STABLECOIN_DECIMALS: num(2),
   DEMO_SETTLEMENT_HBAR_PER_1000_USD: num(0.25),
   DEMO_SETTLEMENT_MAX_HBAR: num(10),
   TND_PER_USD: num(3.1),
@@ -73,7 +82,7 @@ export function buildConfig(env: NodeJS.ProcessEnv = process.env) {
     // Hard safety rule for the hackathon build: never touch mainnet.
     throw new Error(`HEDERA_NETWORK must be "testnet" (got "${parsed.HEDERA_NETWORK}")`);
   }
-  const hederaLive = Boolean(parsed.HEDERA_ACCOUNT_ID && parsed.HEDERA_PRIVATE_KEY && parsed.HEDERA_TOPIC_ID);
+  const hederaLive = parsed.LEDGER_MODE !== "simulated" && Boolean(parsed.HEDERA_ACCOUNT_ID && parsed.HEDERA_PRIVATE_KEY && parsed.HEDERA_TOPIC_ID);
   const production = parsed.NODE_ENV === "production";
   return {
     env: parsed.NODE_ENV,
@@ -106,6 +115,13 @@ export function buildConfig(env: NodeJS.ProcessEnv = process.env) {
       /** Scaled demo settlement: offer USD / 1000 * rate, capped. Keeps the paid amount tied to the authorized amount. */
       hbarPer1000Usd: parsed.DEMO_SETTLEMENT_HBAR_PER_1000_USD,
       maxSettlementHbar: parsed.DEMO_SETTLEMENT_MAX_HBAR,
+      vaultAccountId: parsed.HEDERA_VAULT_ACCOUNT_ID,
+      approverPrivateKey: parsed.HEDERA_APPROVER_PRIVATE_KEY,
+      /** The vault is used only when both its account and the approver key are configured. */
+      vaultConfigured: Boolean(parsed.HEDERA_VAULT_ACCOUNT_ID && parsed.HEDERA_APPROVER_PRIVATE_KEY),
+      stablecoin: parsed.HEDERA_STABLECOIN_TOKEN_ID
+        ? { tokenId: parsed.HEDERA_STABLECOIN_TOKEN_ID, symbol: parsed.HEDERA_STABLECOIN_SYMBOL, decimals: parsed.HEDERA_STABLECOIN_DECIMALS }
+        : null,
     },
     policyOverrides: {
       autonomousLimitUsd: parsed.AUTONOMOUS_PAYMENT_LIMIT,

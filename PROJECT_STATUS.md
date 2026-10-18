@@ -159,3 +159,16 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 - 2026-10-12: Live `demo:check` found a false TAMPERING_DETECTED on scenario A: the first HCS submit reached consensus (#12) but its receipt timed out, the retry published an identical copy (#13), and verification compared the local anchor with the first copy. Fix: verification picks the ledger copy the local anchor points at; HCS submit re-queries the receipt of the same transaction instead of republishing. Regression test added (91 tests).
 - 2026-10-12: Live `demo:check` 8/8 PASS on Hedera testnet with the production build.
 - 2026-10-12: Real AI live (`claude-opus-5-5`). A: Claude picks Oasis $4,150, paid 1.0375 HBAR, 6/6 proofs. D: Claude picks Sahel and itself flags fraud risk; Nasnes rejects, 3ases blocks. G: Claude picks Kairouan; Nasnes rejects the recycled invoice. Claude mis-added line items in a G concern → line totals are now sent to the model with an instruction not to recompute them.
+- 2026-10-18: "Wow" upgrades (see §8): Hedera vault (scheduled transactions + 2-of-2 threshold key), HTS stablecoin settlement, public browser verifier, second organization (ACME) with its own policy, repositioning as "the control layer for AI agents that spend money". 107 API tests + 7 browser tests pass on the simulated ledger; production build OK. Live testnet run of the new features pending (owner: `hedera:setup -- --vault --stablecoin`, `test:testnet`, `demo:check`).
+
+## 8. Upgrades of 2026-10-18
+
+| Upgrade | What changed | Where |
+|---|---|---|
+| Hedera enforces the approval | Above the autonomous limit, payments come from a 2-of-2 vault. Kanawita locks them as a Hedera schedule signed by the agents (1 of 2); the approver's signature makes Hedera execute the transfer; a rejection deletes the schedule. New events `PAYMENT_SCHEDULED`, `PAYMENT_CANCELLED`; payment statuses `SCHEDULED`, `CANCELLED`; expired schedules are re-locked | `agents/kanawita.ts`, `hedera/sdkGateway.ts`, `hedera/simulatedGateway.ts`, `orchestrator/missionService.ts` |
+| HTS stablecoin | Optional EJUSD token (fixed supply): full offer amount instead of scaled HBAR | `hedera:setup -- --stablecoin`, `config.ts`, `kanawita.ts` (`settlementAmount`) |
+| Public verifier | `/verify` page + `GET /api/public/missions/:id/bundle`; the browser reads the Mirror Node and recomputes every hash (`verifyBundle`, shared with the tests) | `packages/shared/src/proof.ts`, `apps/web/components/PublicVerifier.tsx` |
+| Platform, not a single app | `PolicyRegistry`: NGO policy 2.0.0 + ACME policy 1.0.0 ($2,000 limit, electronics/office, Tunis/Sousse/Sfax); scenarios H and I; organization shown in the chat, KPIs, history | `agents/guardian/policy*.{ts,json}`, `seed/demoData.ts` |
+| Offline rehearsal | `LEDGER_MODE=simulated` forces the stand-in ledger even with credentials | `config.ts` |
+
+Verification (simulated ledger, AI fallback): `npm run typecheck` clean · `npm test` 107/107 · `npm run test:e2e` 7/7 in Edge · `npm run build` OK · UI checked in the browser (vault lock card, co-signed payment, public verifier VALID then TAMPERING DETECTED).

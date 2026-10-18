@@ -1,0 +1,25 @@
+{
+  "name": "ACME Tunisia corporate purchasing policy (demo)",
+  "version": "1.0.0",
+  "currency": "USD",
+  "allowedRegions": ["Tunis", "Sousse", "Sfax"],
+  "allowedCategories": ["ELECTRONICS", "OFFICE"],
+  "autonomousLimitUsd": 2000,
+  "maxTransactionUsd": 50000,
+  "humanReviewRiskLevel": "HIGH",
+  "priceAnomaly": {
+    "reviewAbovePct": 20,
+    "blockAbovePct": 50,
+    "reviewBelowPct": 40
+  },
+  "budgetWarningRatio": 0.9,
+  "evaluableMissionStates": ["EVALUATING", "HUMAN_REVIEW", "APPROVED"],
+  "riskWeights": {
+    "aboveAutonomousLimit": 40,
+    "nearBudget": 10,
+    "supplierRiskFlag": 15,
+    "priceAnomaly": 20,
+    "criticalUrgency": 10
+  },
+  "riskBands": { "medium": 20, "high": 40, "critical": 70 }
+}

@@ -1,8 +1,8 @@
 "use client";
-import type { MissionState, PublicConfig } from "@eljoker/shared";
+import { type MissionState, ORGANIZATIONS, organizationOf, type PublicConfig } from "@eljoker/shared";
 import { useState } from "react";
 import { usd } from "@/lib/format";
-import { Button, Chip, Panel } from "./ui";
+import { Button, Chip, ExtLink, Panel } from "./ui";
 
 export function ApprovalCard({ state, config, onDecide }: { state: MissionState; config: PublicConfig | null; onDecide: (decision: "APPROVED" | "REJECTED", reason: string, actorId: string, pin: string) => Promise<void> }) {
   const operators = config?.operators ?? [];
@@ -15,6 +15,9 @@ export function ApprovalCard({ state, config, onDecide }: { state: MissionState;
   const supplier = state.suppliers.find((s) => s.supplierId === offer?.supplierId);
   const lemhaf = state.agentRuns.find((r) => r.agent === "LEMHAF");
   const reviewEvent = [...state.auditEvents].reverse().find((e) => e.eventType === "HUMAN_REVIEW_REQUIRED");
+  const locked = state.payments.find((p) => p.status === "SCHEDULED");
+  const org = ORGANIZATIONS[organizationOf(state.mission)];
+  const live = config?.hedera.mode === "LIVE_TESTNET";
 
   const ready = reason.trim().length >= 5 && !!actor && pin.trim().length >= 4 && config?.operatorAuth !== "DISABLED";
   const decide = async (d: "APPROVED" | "REJECTED") => {
@@ -31,8 +34,20 @@ export function ApprovalCard({ state, config, onDecide }: { state: MissionState;
     <Panel title={<span className="text-amber">⚠ Human approval required</span>} right={<Chip label="Demo operator mode" tone="gold" />} className="border-amber/50 shadow-[0_0_0_1px_rgba(245,158,11,0.25),0_10px_40px_-15px_rgba(245,158,11,0.5)]">
       <div className="grid gap-3 p-4 text-[13px]">
         <p className="text-ink-300">Payment is <b className="text-amber">stopped</b>. 3ASES requires an authorized operator to decide. Only an approval bound to these exact facts lets KANAWITA pay.</p>
+        {locked && (
+          <div className="grid gap-1.5 rounded-xl border border-teal/40 bg-teal/[0.07] p-3 text-[12px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <b className="text-teal">🔒 Locked on {live ? "Hedera" : "the ledger (simulated)"}</b>
+              <Chip label="1 of 2 signatures" tone="amber" />
+              <ExtLink href={locked.scheduleHashscanUrl}>schedule {locked.scheduleId}</ExtLink>
+            </div>
+            <span className="text-ink-300">
+              {locked.settlementCurrency === "HBAR" ? `${locked.settlementAmount} ℏ` : `${locked.settlementAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${locked.settlementCurrency}`} wait in the 2-of-2 vault{locked.vaultAccountId && live ? ` ${locked.vaultAccountId}` : ""}. The agents already signed; the funds move only when your approval adds the approver&apos;s signature, and Hedera executes the transfer itself. Reject, and the schedule is deleted.
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 rounded-xl bg-ink-950/50 p-3 text-[12px]">
-          <div><div className="text-ink-400">Mission</div>{state.mission.beneficiaries.toLocaleString("en-US")} people · {state.mission.location}</div>
+          <div><div className="text-ink-400">Mission · {org.shortName}</div>{state.mission.beneficiaries.toLocaleString("en-US")} {org.peopleLabel} · {state.mission.location}</div>
           <div><div className="text-ink-400">Amount</div><b>{usd(offer?.totalPrice)}</b> of {usd(state.mission.maximumBudget)}</div>
           <div><div className="text-ink-400">Supplier</div>{supplier?.name} {supplier && <Chip label={supplier.verified ? "VERIFIED" : "UNVERIFIED"} />}</div>
           <div><div className="text-ink-400">Risk</div>{g && <Chip label={`RISK ${g.riskLevel}`} />}</div>

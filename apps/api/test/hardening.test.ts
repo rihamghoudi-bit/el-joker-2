@@ -1,3 +1,4 @@
+import { isLivePayment } from "@eljoker/shared";
 import request from "supertest";
 import { afterEach, describe, expect, it } from "vitest";
 import { AiUnavailableError, type AiClient } from "../src/ai/aiClient";
@@ -109,7 +110,7 @@ describe("Operator PIN", () => {
     const id = await review();
     await expect(app.missions.submitApproval(id, { decision: "APPROVED", reason: "looks fine to me", actorId: "ops-lead", pin: "1111" })).rejects.toThrow(/Invalid operator PIN/);
     expect(app.store.getApproval(id)).toBeNull();
-    expect(app.store.listPayments(id)).toHaveLength(0);
+    expect(app.store.listPayments(id).filter(isLivePayment)).toHaveLength(0);
   });
 
   it("locks the mission after 5 wrong PINs", async () => {

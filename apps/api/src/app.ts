@@ -1,4 +1,4 @@
-import { ApprovalRequest, CreateMissionRequest, type PublicConfig, type ScenarioInfo } from "@eljoker/shared";
+import { ApprovalRequest, CreateMissionRequest, OrganizationId, organizationOf, type PublicConfig, type ScenarioInfo } from "@eljoker/shared";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
@@ -39,8 +39,21 @@ export function createApp(s: AppServices) {
         payeeAccountId: s.ledger.payeeAccountId,
         mirrorNodeUrl: s.config.hedera.mirrorNodeUrl,
         topicHashscanUrl: s.ledger.hashscanTopicUrl(),
+        vault: {
+          enabled: s.ledger.vault.enabled,
+          accountId: s.ledger.vault.accountId,
+          threshold: "2-of-2 (agents + approver)",
+          hashscanUrl: s.ledger.hashscanAccountUrl(s.ledger.vault.accountId),
+        },
       },
-      payment: { hbarPer1000Usd: s.config.hedera.hbarPer1000Usd, maxSettlementHbar: s.config.hedera.maxSettlementHbar },
+      payment: {
+        hbarPer1000Usd: s.config.hedera.hbarPer1000Usd,
+        maxSettlementHbar: s.config.hedera.maxSettlementHbar,
+        asset: s.ledger.settlement.kind,
+        symbol: s.ledger.settlement.symbol,
+        tokenId: s.ledger.settlement.kind === "TOKEN" ? s.ledger.settlement.tokenId : null,
+        tokenHashscanUrl: s.ledger.settlement.kind === "TOKEN" ? s.ledger.hashscanTokenUrl(s.ledger.settlement.tokenId) : null,
+      },
       policy: {
         version: s.policy.effectiveVersion,
         autonomousLimitUsd: s.policy.autonomousLimitUsd,
@@ -49,15 +62,17 @@ export function createApp(s: AppServices) {
         allowedRegions: s.policy.allowedRegions,
         allowedCategories: s.policy.allowedCategories,
       },
+      policies: s.policies.summaries(),
       operators: s.config.operators,
       operatorAuth: s.config.operatorPin ? "DEMO_PIN" : "DISABLED",
     };
     res.json(body);
   });
 
-  app.get("/api/policy", (_req, res) => {
-    const { referencePrices, ...rest } = s.policy;
-    res.json({ ...rest, referencePrices });
+  /** A spending policy, by organization (?org=ACME_PROCUREMENT). Defaults to the NGO. */
+  app.get("/api/policy", (req, res) => {
+    const org = OrganizationId.catch("NGO_RELIEF").parse(req.query.org);
+    res.json(s.policies.get(org));
   });
 
   app.get("/api/scenarios", (_req, res) => {
@@ -75,7 +90,7 @@ export function createApp(s: AppServices) {
 
   app.get("/api/missions", (_req, res) => {
     res.json(
-      s.store.listMissions(30).map((m) => ({ missionId: m.missionId, description: m.description, location: m.location, maximumBudget: m.maximumBudget, status: m.status, scenarioId: m.scenarioId, createdAt: m.createdAt })),
+      s.store.listMissions(30).map((m) => ({ missionId: m.missionId, description: m.description, location: m.location, maximumBudget: m.maximumBudget, status: m.status, scenarioId: m.scenarioId, organizationId: organizationOf(m), createdAt: m.createdAt })),
     );
   });
 
@@ -109,6 +124,17 @@ export function createApp(s: AppServices) {
     wrap(async (req, res) => {
       const out = await s.missions.replayPayment(String(req.params.id));
       res.status(out.executed ? 200 : 409).json(out);
+    }),
+  );
+
+  /**
+   * Public proof bundle: the raw evidence of every event plus where its proof lives on Hedera. Read-only. The public
+   * verifier recomputes everything in the browser and checks it against the Mirror Node, so it never has to trust us.
+   */
+  app.get(
+    "/api/public/missions/:id/bundle",
+    wrap(async (req, res) => {
+      res.json(await s.missions.getProofBundle(String(req.params.id)));
     }),
   );
 

@@ -5,13 +5,14 @@
 ```bash
 npm run seed        # clean mission history (demo data re-seeded)
 npm run demo        # production build + start (API :4000, UI :3000)
-npm run demo:check  # optional dry run of every scenario (spends a little testnet HBAR when live)
+npm run demo:check  # optional dry run of every scenario (spends a little testnet HBAR / EJUSD when live)
 ```
 
-- Header chips: **AI · claude-…** (or *fallback*) and **Hedera testnet · 0.0.x** (or *simulated*).
+- Header chips: **AI · claude-…** (or *fallback*), **Hedera testnet · 0.0.x** (or *simulated*), **Vault 2-of-2 · 0.0.x**, **Pays in EJUSD (HTS)**.
 - Projector or weak laptop → click **Motion: off**.
 - Open the topic on HashScan in a second tab (link next to the Hedera chip).
 - Operator PIN: `0619` (or your `DEMO_OPERATOR_PIN`).
+- No network at the venue → `LEDGER_MODE=simulated` and `AI_ENABLED=false` in `.env`: everything runs, clearly labeled SIMULATED / FALLBACK.
 
 ---
 
@@ -19,30 +20,30 @@ npm run demo:check  # optional dry run of every scenario (spends a little testne
 
 | Time | Action | Say |
 |---|---|---|
-| 0:00 | Landing page | “EL JOKER lets agents run emergency procurement — but only one of them is AI, and it only *recommends*. A deterministic guardian decides, humans control high-risk spending, and Hedera proves everything.” |
-| 0:15 | *Go for EL JOKER* → press send on the pre-filled request (**A**) | “500 people in Gabès, $5,000. Watch the conversation: Lemhaf ranks offers, Nasnes verifies the evidence, 3ases applies 13 rules with no LLM, Kanawita pays on testnet — and each decision appears in *Live Hedera proofs*.” Click a HashScan link. |
-| 1:05 | Chip **D** → send | “Rush order. The AI picks the cheapest broker. Nasnes: not in the registry, no license, implausible prices → rejected. AI cannot bypass security.” |
-| 1:35 | Back on mission A → *Replay payment (attack)* | “Same payment twice → rejected: idempotency + one payment per mission, enforced by the database. The attempt itself is proven on Hedera.” |
-| 2:00 | *Proof & verify* → Verify → *Insider rewrites hashes too* → Verify | “An insider changes the approved price and recomputes every local hash. A normal database can't tell. Hedera can: TAMPERING DETECTED.” |
-| 2:40 | Close | “AI proposes. Verification checks. Deterministic policy decides. Humans control risk. Hedera proves.” |
+| 0:00 | Landing page | “AI agents are starting to spend money. EL JOKER is the control layer: one AI proposes, rules decide, Hedera proves — and above the limit, the money sits in a Hedera vault that only a human co-signature opens.” |
+| 0:15 | *Go for EL JOKER* → press send on the pre-filled request (**A**) | “An NGO, 500 people in Gabès, $5,000. Lemhaf ranks offers, Nasnes verifies, 3ases applies the NGO's rules with no LLM, Kanawita pays 4,150.00 EJUSD — and each decision appears in *Live Hedera proofs*.” |
+| 0:55 | Chip **I** (ACME) → send | “Same engine, a company: 12 laptops, $11,820, above ACME's $2,000 limit. Kanawita can't pay: it locks the payment on Hedera — 1 of 2 signatures.” Click *schedule* on HashScan. |
+| 1:30 | Approval card: reason + PIN → Approve | “The approver co-signs, and Hedera itself executes the transfer. Reject, and the schedule is deleted. The agents' key alone can never move the vault.” |
+| 2:00 | *Proof & verify* → *Insider rewrites hashes too* → *Open the public verifier* | “An insider rewrites the price and every hash. Don't trust us: this page reads Hedera from your browser and recomputes everything — TAMPERING DETECTED.” |
+| 2:40 | Close | “AI proposes. Rules decide. Humans co-sign on Hedera. Hedera proves. Autonomous, but never uncontrolled.” |
 
 ## 5-minute version
 
 | Time | Action | Say |
 |---|---|---|
-| 0:00 | Landing | Problem: NGOs need speed in emergencies, but autonomous AI spending without control and proof is unacceptable. |
-| 0:25 | **A** approved | Walk the conversation: your request → Lem3alem → Lemhaf (REAL AI chip vs FALLBACK label) → Nasnes 10 checks → 3ases 13 checks, risk LOW → Kanawita receipt SUCCESS, 1.0375 ℏ (proportional to the $4,150 offer). Live Hedera proofs + HashScan. |
-| 1:20 | **B** budget block | $100 budget → BLOCKED, Kanawita idle, `GUARDIAN_BLOCKED` anchored. |
-| 1:45 | **D** unverified supplier | AI's attractive pick rejected by Nasnes; blocked. |
-| 2:10 | **G** recycled invoice | A *verified* supplier, cheaper — but its invoice number was already used by an earlier mission → rejected. “Even a trusted supplier can't double-bill.” |
-| 2:35 | **E** human review | $16,600 > $5,000 → HUMAN REVIEW, payment on hold. Approval card in the conversation: show a wrong PIN being refused, then approve with reason + PIN → re-evaluated → 4.15 ℏ paid. “The approval is bound to the exact facts the operator saw.” |
-| 3:35 | **C** replay | Replay on A or E → 409 + reasons; `PAYMENT_BLOCKED` on HCS. |
-| 4:00 | **F** tampering | Verify → VALID (Local record vs Hedera proof vs Result). *Delete last event* → Verify → “Missing — deleted from the local database · proof still on the ledger” → TAMPERING DETECTED. “Deleting history doesn't work either.” |
-| 4:40 | Close | Business: NGOs, humanitarian and grant programs; B2B SaaS / proof-volume pricing (hypotheses — no customers claimed). Thesis line. |
+| 0:00 | Landing | Problem: agents that buy and pay are coming; organizations must choose between autonomy and control. EL JOKER removes the trade-off. |
+| 0:25 | **A** approved (NGO) | Walk the conversation: request → Lem3alem → Lemhaf (REAL AI chip vs FALLBACK label) → Nasnes 10 checks → 3ases 12 checks shown, risk LOW → Kanawita receipt SUCCESS, 4,150.00 EJUSD. Live Hedera proofs + HashScan. |
+| 1:15 | **D** unverified supplier | The AI's attractive pick rejected by Nasnes; blocked. “The AI can be wrong; it can't spend.” |
+| 1:40 | **C** replay on A | Replay → 409 + reasons; `PAYMENT_BLOCKED` on HCS; still one payment. |
+| 2:00 | **H** then **I** (ACME) | Same agents, ACME policy 1.0.0: H ($1,140) paid autonomously; I ($11,820) → HUMAN REVIEW → **locked in the vault** (`PAYMENT_SCHEDULED`, 1 of 2). Show the schedule on HashScan (pending). |
+| 3:00 | Approve I | Wrong PIN refused, then reason + PIN → approver co-signs → Hedera executes → PAID; HashScan shows the schedule executed with 2 signatures. |
+| 3:40 | **F** + public verifier | Verify → VALID. *Insider rewrites hashes too* → open `/verify?mission=…` → the browser reads the Mirror Node, recomputes → TAMPERING DETECTED (3 events don't match). |
+| 4:30 | Close | Business: the control layer for agentic spending — first market NGOs (accountability to donors), then company procurement (hypotheses — no customers claimed). Thesis line. |
 
 ## Fallback plan
 
 - **No internet / Anthropic down** → Lemhaf shows `FALLBACK · rule-based` with the reason. Nothing pretends to be Claude.
 - **Hedera slow** → proofs show “consensus…”. Kanawita waits for the authorization proof (up to 45 s) before paying. Verification may show PENDING until the Mirror Node indexes the message: press Verify again.
-- **No credentials** → everything runs on the clearly labeled SIMULATED ledger (no tx ids, no HashScan links).
+- **Vault not configured** → above the limit the payment simply stays on hold until approval, then pays from the agents' account (the old behavior). Run `npm run hedera:setup -- --vault --stablecoin` to enable it.
+- **No credentials** → everything runs on the clearly labeled SIMULATED ledger and vault (no tx ids, no HashScan links).
 - **Stutter on the projector** → Motion: off.

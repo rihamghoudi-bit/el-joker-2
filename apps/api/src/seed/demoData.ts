@@ -5,7 +5,19 @@ import type { ItemCategory, MissionDraftInput, RequestedItem, ScenarioId, Scenar
  * Registry entries are a simulated procurement registry, not a real authority.
  */
 
-export type ItemKey = "water_bottle" | "medicine_kit" | "ors" | "hygiene_kit" | "food_parcel" | "shelter_kit" | "electronics" | "other";
+export type ItemKey =
+  | "water_bottle"
+  | "medicine_kit"
+  | "ors"
+  | "hygiene_kit"
+  | "food_parcel"
+  | "shelter_kit"
+  | "electronics"
+  | "laptop"
+  | "monitor"
+  | "office_chair"
+  | "office_supplies"
+  | "other";
 
 export interface DemoSupplier extends Supplier {
   priceList: Partial<Record<ItemKey, number>>;
@@ -105,6 +117,41 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     invoicePrefix: "KQS",
     fixedInvoiceId: "INV-KQS-2026-0042",
   },
+  /* ---- ACME Tunisia (second use case: company procurement) ---- */
+  {
+    supplierId: "SUP-CARTHAGE-IT",
+    name: "Carthage IT Distribution (demo)",
+    region: "Tunis",
+    serviceRegions: ["Tunis", "Sousse", "Sfax"],
+    categories: ["ELECTRONICS", "OFFICE"],
+    verified: true,
+    verificationSource: "Simulated vendor registry · entry VND-0418",
+    riskFlags: [],
+    claims: ["Authorized business laptop reseller", "Next-day delivery in Greater Tunis"],
+    isDemo: true,
+    priceList: { laptop: 820, monitor: 165, office_supplies: 4.2 },
+    deliveryHours: 48,
+    bidsOnlyOnRush: false,
+    hasLicenseEvidence: true,
+    invoicePrefix: "CIT",
+  },
+  {
+    supplierId: "SUP-SOUSSE-OFFICE",
+    name: "Sousse Office Pro (demo)",
+    region: "Sousse",
+    serviceRegions: ["Sousse", "Tunis"],
+    categories: ["ELECTRONICS", "OFFICE"],
+    verified: true,
+    verificationSource: "Simulated vendor registry · entry VND-0377",
+    riskFlags: [],
+    claims: ["Office furniture and supplies since 2009"],
+    isDemo: true,
+    priceList: { laptop: 860, monitor: 159, office_chair: 118, office_supplies: 3.8 },
+    deliveryHours: 72,
+    bidsOnlyOnRush: false,
+    hasLicenseEvidence: true,
+    invoicePrefix: "SOP",
+  },
 ];
 
 /** Demo history: invoice INV-KQS-2026-0042 was already used by an earlier (fictional) mission in September. */
@@ -133,6 +180,10 @@ export const REFERENCE_PRICES: Record<ItemKey, number> = {
   food_parcel: 25,
   shelter_kit: 90,
   electronics: 150,
+  laptop: 850,
+  monitor: 170,
+  office_chair: 125,
+  office_supplies: 4,
   other: 10,
 };
 
@@ -143,6 +194,7 @@ const CATEGORY_DEFAULT_KEY: Record<ItemCategory, ItemKey> = {
   HYGIENE: "hygiene_kit",
   SHELTER: "shelter_kit",
   ELECTRONICS: "electronics",
+  OFFICE: "office_supplies",
   OTHER: "other",
 };
 
@@ -152,6 +204,9 @@ export function itemKey(item: Pick<RequestedItem, "category" | "name">): ItemKey
   if (item.category === "MEDICINE" && /kit|medic/.test(n)) return "medicine_kit";
   if (/water/.test(n)) return "water_bottle";
   if (/hygiene/.test(n)) return "hygiene_kit";
+  if (/laptop|notebook/.test(n)) return "laptop";
+  if (/monitor|screen|display/.test(n)) return "monitor";
+  if (/chair/.test(n)) return "office_chair";
   return CATEGORY_DEFAULT_KEY[item.category];
 }
 
@@ -174,6 +229,7 @@ export interface ScenarioDefinition extends ScenarioInfo {
 export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "A_APPROVED",
+    organizationId: "NGO_RELIEF",
     request: "500 people in Gabès need drinking water and essential medicine after a water network failure. Budget: $5,000. Delivery within 48 hours to the civil-protection warehouse.",
     letter: "A",
     title: "Approved mission",
@@ -194,6 +250,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "B_BUDGET_BLOCK",
+    organizationId: "NGO_RELIEF",
     request: "500 people in Gabès need drinking water and essential medicine. We only have $100 available. Delivery within 48 hours.",
     letter: "B",
     title: "Budget block",
@@ -214,6 +271,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "C_DUPLICATE_PAYMENT",
+    organizationId: "NGO_RELIEF",
     request: "500 people in Gabès need drinking water and essential medicine. Budget: $5,000. Delivery within 48 hours.",
     letter: "C",
     title: "Duplicate payment attack",
@@ -234,6 +292,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "D_UNVERIFIED_SUPPLIER",
+    organizationId: "NGO_RELIEF",
     request: "Rush: 500 people in Gabès need drinking water and essential medicine within 12 hours. Budget: $5,000.",
     letter: "D",
     title: "Unverified supplier",
@@ -254,6 +313,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "E_HUMAN_REVIEW",
+    organizationId: "NGO_RELIEF",
     request: "2,000 displaced people in Médenine need drinking water and essential medicine. Budget: $20,000. Delivery within 72 hours.",
     letter: "E",
     title: "High-risk human review",
@@ -278,6 +338,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "F_TAMPERING",
+    organizationId: "NGO_RELIEF",
     request: "500 people in Gabès need drinking water and essential medicine. Budget: $5,000. Delivery within 48 hours. (audit integrity drill)",
     letter: "F",
     title: "Tampering detection",
@@ -298,6 +359,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "G_RECYCLED_INVOICE",
+    organizationId: "NGO_RELIEF",
     request: "400 people in Kairouan need drinking water and essential medicine after flash floods. Budget: $4,500. Delivery within 48 hours.",
     letter: "G",
     title: "Recycled invoice",
@@ -317,6 +379,54 @@ export const SCENARIOS: ScenarioDefinition[] = [
       currency: "USD",
       deadline: hoursFromNow(48),
       urgency: "HIGH",
+      constraints: [],
+    }),
+  },
+  /* ---- ACME Tunisia: the same agents and proofs, a different organization and policy ---- */
+  {
+    id: "H_ACME_SUPPLIES",
+    organizationId: "ACME_PROCUREMENT",
+    request: "ACME Tunisia: restock printer paper and stationery for the 120 employees of the Tunis office. 300 packs. Budget: $1,500. Delivery within 5 days.",
+    letter: "H",
+    title: "ACME · office supplies",
+    pitch: "A company restocks its Tunis office. Small amount, inside ACME's $2,000 autonomous limit.",
+    expected: "Same agents, ACME policy 1.0.0 → verified vendor → 3ASES APPROVED → paid autonomously → proofs on the same Hedera topic.",
+    followUp: null,
+    draft: () => ({
+      organizationId: "ACME_PROCUREMENT",
+      description: "Printer paper and stationery restock for ACME Tunisia's Tunis office (120 employees).",
+      location: "Tunis",
+      beneficiaries: 120,
+      requestedItems: [{ category: "OFFICE", name: "Printer paper & stationery pack", quantity: 300, unit: "pack" }],
+      maximumBudget: 1500,
+      currency: "USD",
+      deadline: hoursFromNow(120),
+      urgency: "MEDIUM",
+      constraints: ["Deliver to the Tunis office reception"],
+    }),
+  },
+  {
+    id: "I_ACME_LAPTOPS",
+    organizationId: "ACME_PROCUREMENT",
+    request: "ACME Tunisia: 12 laptops and 12 monitors for the new engineering team in Tunis. Budget: $15,000. Delivery within 7 days.",
+    letter: "I",
+    title: "ACME · laptops above the limit",
+    pitch: "12 laptops + 12 monitors: far above ACME's $2,000 autonomous limit.",
+    expected: "3ASES → HUMAN_REVIEW_REQUIRED → the payment is locked in the Hedera vault (2-of-2) until the approver co-signs.",
+    followUp: "The payment is locked on Hedera: approve or reject in the approval card (demo PIN in the README).",
+    draft: () => ({
+      organizationId: "ACME_PROCUREMENT",
+      description: "Laptops and monitors for ACME Tunisia's new engineering team (12 employees).",
+      location: "Tunis",
+      beneficiaries: 12,
+      requestedItems: [
+        { category: "ELECTRONICS", name: "Business laptop 14-inch", quantity: 12, unit: "unit" },
+        { category: "ELECTRONICS", name: "24-inch monitor", quantity: 12, unit: "unit" },
+      ],
+      maximumBudget: 15000,
+      currency: "USD",
+      deadline: hoursFromNow(168),
+      urgency: "MEDIUM",
       constraints: [],
     }),
   },
