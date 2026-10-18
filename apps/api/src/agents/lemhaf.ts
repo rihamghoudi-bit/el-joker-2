@@ -3,7 +3,7 @@
  * Ranks candidate offers and explains trade-offs. It RECOMMENDS; it can never authorize money.
  * REAL_AI when Claude answers; FALLBACK (rule-based, clearly labeled) otherwise.
  */
-import { type ExecutionMode, type Mission, type Offer, ORGANIZATIONS, organizationOf, Recommendation, type Supplier } from "@eljoker/shared";
+import { type ExecutionMode, type Mission, type Offer, ORGANIZATIONS, organizationOf, Recommendation, type Supplier, money } from "@eljoker/shared";
 import { z } from "zod";
 import { type AiClient, AiUnavailableError } from "../ai/aiClient";
 import { canonicalize } from "../lib/canonical";
@@ -49,7 +49,7 @@ function buildUserPrompt(mission: Mission, offers: Offer[], suppliers: Map<strin
       location: mission.location,
       beneficiaries: mission.beneficiaries,
       requestedItems: mission.requestedItems,
-      maximumBudgetUsd: mission.maximumBudget,
+      maximumBudgetAmount: mission.maximumBudget,
       hoursUntilDeadline: Math.round(hoursUntil(mission.deadline)),
       urgency: mission.urgency,
     },
@@ -61,8 +61,8 @@ function buildUserPrompt(mission: Mission, offers: Offer[], suppliers: Map<strin
         supplierRegion: s?.region,
         supplierClaims: s?.claims ?? [],
         // Line totals are given (already checked by code) so the model never has to redo the arithmetic.
-        items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice, lineTotalUsd: i.lineTotal })),
-        totalPriceUsd: o.totalPrice,
+        items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice, lineTotalTnd: i.lineTotal })),
+        totalPriceTnd: o.totalPrice,
         deliveryTimeHours: o.deliveryTimeHours,
       };
     }),
@@ -84,19 +84,18 @@ export function fallbackRank(mission: Mission, offers: Offer[], suppliers: Map<s
   scored.sort((a, b) => b.score - a.score || a.o.totalPrice - b.o.totalPrice);
   const top = scored[0]!;
   const topSupplier = suppliers.get(top.o.supplierId);
-  const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
   return Recommendation.parse({
     recommendedOfferId: top.o.offerId,
     ranking: scored.map((s, i) => ({
       offerId: s.o.offerId,
       rank: i + 1,
       score: Math.min(100, s.score),
-      rationale: `${suppliers.get(s.o.supplierId)?.name ?? s.o.supplierId}: ${usd(s.o.totalPrice)}, ${s.o.deliveryTimeHours}h delivery${s.onTime ? "" : " (misses deadline)"}, ${Math.round(s.coverage * 100)}% items covered.`,
+      rationale: `${suppliers.get(s.o.supplierId)?.name ?? s.o.supplierId}: ${money(s.o.totalPrice)}, ${s.o.deliveryTimeHours}h delivery${s.onTime ? "" : " (misses deadline)"}, ${Math.round(s.coverage * 100)}% items covered.`,
     })),
-    summary: `Rule-based ranking (price 55%, on-time delivery 30%, item coverage 15%) selects ${topSupplier?.name ?? top.o.supplierId} at ${usd(top.o.totalPrice)}.`,
-    tradeoffs: scored.slice(1, 3).map((s) => `${suppliers.get(s.o.supplierId)?.name}: ${usd(s.o.totalPrice)} with ${s.o.deliveryTimeHours}h delivery.`),
+    summary: `Rule-based ranking (price 55%, on-time delivery 30%, item coverage 15%) selects ${topSupplier?.name ?? top.o.supplierId} at ${money(top.o.totalPrice)}.`,
+    tradeoffs: scored.slice(1, 3).map((s) => `${suppliers.get(s.o.supplierId)?.name}: ${money(s.o.totalPrice)} with ${s.o.deliveryTimeHours}h delivery.`),
     concerns: [
-      ...(top.o.totalPrice > mission.maximumBudget ? [`Best offer ${usd(top.o.totalPrice)} is above the ${usd(mission.maximumBudget)} budget.`] : []),
+      ...(top.o.totalPrice > mission.maximumBudget ? [`Best offer ${money(top.o.totalPrice)} is above the ${money(mission.maximumBudget)} budget.`] : []),
       ...(topSupplier?.claims.length ? [`Supplier claims are self-declared: ${topSupplier.claims.join("; ")}.`] : []),
     ].slice(0, 6),
     statedFacts: { supplierName: topSupplier?.name ?? top.o.supplierId, totalPrice: top.o.totalPrice, deliveryTimeHours: top.o.deliveryTimeHours, claimsSupplierVerified: false },

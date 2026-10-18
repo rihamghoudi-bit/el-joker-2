@@ -12,7 +12,7 @@ const failing: AiClient = { available: true, model: "claude-test", unavailableRe
 
 function mission(id = "A_APPROVED"): Mission {
   const d = getScenario(id)!.draft();
-  return { ...(d as Mission), missionId: "msn_test0001", createdAt: new Date().toISOString(), status: "RESEARCHING", scenarioId: id, isDemo: true, currency: "USD", constraints: d.constraints ?? [], urgency: d.urgency ?? "HIGH", deadline: d.deadline! };
+  return { ...(d as Mission), missionId: "msn_test0001", createdAt: new Date().toISOString(), status: "RESEARCHING", scenarioId: id, isDemo: true, currency: "TND", constraints: d.constraints ?? [], urgency: d.urgency ?? "HIGH", deadline: d.deadline! };
 }
 const suppliers = new Map<string, Supplier>(DEMO_SUPPLIERS.map((s) => [s.supplierId, s]));
 
@@ -21,17 +21,17 @@ describe("LEM3ALEM", () => {
     const r = await planMission({ mission: getScenario("A_APPROVED")!.draft() }, unavailable);
     expect(r.status).toBe("CREATED");
     expect(r.mode).toBe("DETERMINISTIC");
-    expect(r.draft?.maximumBudget).toBe(5000);
+    expect(r.draft?.maximumBudget).toBe(15000);
   });
 
   it("free text: extracts facts with the labeled fallback when AI is unavailable", async () => {
-    const r = await planMission({ text: "500 people in Gabès need water and medicine, budget $5,000 within 48 hours" }, unavailable);
+    const r = await planMission({ text: "500 people in Gabès need water and medicine, budget 15,000 TND within 48 hours" }, unavailable);
     expect(r.status).toBe("CREATED");
     expect(r.mode).toBe("FALLBACK");
     expect(r.fallbackReason).toMatch(/not configured/);
     expect(r.draft?.location).toBe("Gabès");
     expect(r.draft?.beneficiaries).toBe(500);
-    expect(r.draft?.maximumBudget).toBe(5000);
+    expect(r.draft?.maximumBudget).toBe(15000);
     expect(r.notes.join(" ")).toMatch(/estimated/);
   });
 
@@ -42,7 +42,7 @@ describe("LEM3ALEM", () => {
   });
 
   it("uses Claude output when available (REAL_AI) and still validates it", async () => {
-    const ai = new StubAiClient("claude-test", () => ({ description: "Water for Sfax", location: "Sfax", beneficiaries: 300, maximumBudgetUsd: 3000, budgetCurrency: "USD", urgency: "HIGH", deadlineHours: 48, items: [{ category: "WATER", name: "Bottled drinking water 1.5L", quantity: 1800, unit: "bottle" }] }));
+    const ai = new StubAiClient("claude-test", () => ({ description: "Water for Sfax", location: "Sfax", beneficiaries: 300, maximumBudgetAmount: 3000, budgetCurrency: "USD", urgency: "HIGH", deadlineHours: 48, items: [{ category: "WATER", name: "Bottled drinking water 1.5L", quantity: 1800, unit: "bottle" }] }));
     const r = await planMission({ text: "300 people in Sfax need water, budget 3000 dollars" }, ai);
     expect(r.mode).toBe("REAL_AI");
     expect(r.model).toBe("claude-test");
@@ -56,7 +56,7 @@ describe("LEM3ALEM", () => {
   });
 
   it("rule-based extraction parses k-suffixed budgets", () => {
-    expect(ruleBasedExtraction("budget $12k for 2,000 people in Médenine").maximumBudgetUsd).toBe(12000);
+    expect(ruleBasedExtraction("budget $12k for 2,000 people in Médenine").maximumBudgetAmount).toBe(12000);
   });
 });
 

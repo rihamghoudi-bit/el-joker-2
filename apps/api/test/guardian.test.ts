@@ -9,17 +9,17 @@ const policy = loadPolicy();
 
 function input(over: Partial<{ [K in keyof GuardianInput]: Partial<GuardianInput[K]> }> = {}): GuardianInput {
   const base: GuardianInput = {
-    mission: { missionId: "msn_1", status: "EVALUATING", location: "Gabès", maximumBudget: 5000, currency: "USD", urgency: "HIGH" },
+    mission: { missionId: "msn_1", status: "EVALUATING", location: "Gabès", maximumBudget: 15000, currency: "TND", urgency: "HIGH" },
     offer: {
       offerId: "off_1",
       supplierId: "SUP-OASIS",
-      totalPrice: 4150,
-      currency: "USD",
+      totalPrice: 12450,
+      currency: "TND",
       invoiceId: "INV-1",
       items: [
-        { key: "water_bottle", category: "WATER", quantity: 3000, unitPrice: 0.5 },
-        { key: "medicine_kit", category: "MEDICINE", quantity: 50, unitPrice: 42 },
-        { key: "ors", category: "MEDICINE", quantity: 1000, unitPrice: 0.55 },
+        { key: "water_bottle", category: "WATER", quantity: 3000, unitPrice: 1.5 },
+        { key: "medicine_kit", category: "MEDICINE", quantity: 50, unitPrice: 126 },
+        { key: "ors", category: "MEDICINE", quantity: 1000, unitPrice: 1.65 },
       ],
     },
     supplier: { supplierId: "SUP-OASIS", inRegistry: true, verified: true, serviceRegions: ["Gabès", "Médenine"], riskFlags: [] },
@@ -43,7 +43,7 @@ describe("3ASES deterministic guardian", () => {
     expect(r.decision).toBe("APPROVED");
     expect(r.riskLevel).toBe("LOW");
     expect(r.checks.every((c) => c.outcome === "PASS")).toBe(true);
-    expect(r.policyVersion).toMatch(/^2\.0\.0\+[0-9a-f]{8}$/);
+    expect(r.policyVersion).toMatch(/^2\.1\.0\+[0-9a-f]{8}$/);
   });
 
   it("is deterministic: same input + same policy = identical result", () => {
@@ -53,7 +53,7 @@ describe("3ASES deterministic guardian", () => {
   });
 
   it("budget: blocks when the offer exceeds the budget", () => {
-    const r = evaluate(input({ mission: { maximumBudget: 100 } }), policy);
+    const r = evaluate(input({ mission: { maximumBudget: 300 } }), policy);
     expect(r.decision).toBe("BLOCKED");
     expect(check(r, "BUDGET")).toBe("BLOCK");
     expect(r.riskLevel).toBe("CRITICAL");
@@ -89,24 +89,24 @@ describe("3ASES deterministic guardian", () => {
   });
 
   it("price anomaly: review when moderately overpriced, block when grossly overpriced", () => {
-    const over30 = input({ offer: { items: [{ key: "medicine_kit", category: "MEDICINE", quantity: 50, unitPrice: 60 }], totalPrice: 3000 } });
+    const over30 = input({ offer: { items: [{ key: "medicine_kit", category: "MEDICINE", quantity: 50, unitPrice: 180 }], totalPrice: 9000 } });
     const r1 = evaluate(over30, policy);
     expect(check(r1, "PRICE_ANOMALY")).toBe("REVIEW");
-    const over80 = input({ offer: { items: [{ key: "medicine_kit", category: "MEDICINE", quantity: 50, unitPrice: 81 }], totalPrice: 4050 } });
+    const over80 = input({ offer: { items: [{ key: "medicine_kit", category: "MEDICINE", quantity: 50, unitPrice: 243 }], totalPrice: 12150 } });
     expect(check(evaluate(over80, policy), "PRICE_ANOMALY")).toBe("BLOCK");
   });
 
   it("blocks disallowed spending categories", () => {
-    const r = evaluate(input({ offer: { items: [{ key: "electronics", category: "ELECTRONICS", quantity: 2, unitPrice: 150 }], totalPrice: 300 } }), policy);
+    const r = evaluate(input({ offer: { items: [{ key: "electronics", category: "ELECTRONICS", quantity: 2, unitPrice: 450 }], totalPrice: 900 } }), policy);
     expect(check(r, "CATEGORY_ALLOWED")).toBe("BLOCK");
   });
 
   it("autonomous limit => HUMAN_REVIEW_REQUIRED; hard limit => BLOCKED", () => {
-    const review = evaluate(input({ mission: { maximumBudget: 20000 }, offer: { totalPrice: 16600, items: [] } }), policy);
+    const review = evaluate(input({ mission: { maximumBudget: 60000 }, offer: { totalPrice: 49800, items: [] } }), policy);
     expect(review.decision).toBe("HUMAN_REVIEW_REQUIRED");
     expect(check(review, "TRANSACTION_LIMIT")).toBe("REVIEW");
     expect(review.riskLevel).toBe("HIGH");
-    const hard = evaluate(input({ mission: { maximumBudget: 90000 }, offer: { totalPrice: 30000, items: [] } }), policy);
+    const hard = evaluate(input({ mission: { maximumBudget: 270000 }, offer: { totalPrice: 90000, items: [] } }), policy);
     expect(check(hard, "TRANSACTION_LIMIT")).toBe("BLOCK");
   });
 
@@ -116,7 +116,7 @@ describe("3ASES deterministic guardian", () => {
   });
 
   describe("human approval", () => {
-    const reviewInput = input({ mission: { maximumBudget: 20000, status: "HUMAN_REVIEW" }, offer: { totalPrice: 16600, items: [] } });
+    const reviewInput = input({ mission: { maximumBudget: 60000, status: "HUMAN_REVIEW" }, offer: { totalPrice: 49800, items: [] } });
     const hash = guardianInputHash(reviewInput, policy);
     const approval = (over: Partial<ApprovalEvidence> = {}): ApprovalEvidence => ({ approvalId: "apr_1", decision: "APPROVED", actorId: "ops-lead", actorAuthorized: true, guardianInputHash: hash, policyVersion: policy.effectiveVersion, ...over });
 
@@ -138,13 +138,13 @@ describe("3ASES deterministic guardian", () => {
       expect(evaluate(reviewInput, policy, approval({ guardianInputHash: "0".repeat(64) })).decision).toBe("HUMAN_REVIEW_REQUIRED");
     });
     it("an approval can never override a BLOCK", () => {
-      const blocked = input({ supplier: { verified: false }, mission: { maximumBudget: 20000 }, offer: { totalPrice: 16600, items: [] } });
+      const blocked = input({ supplier: { verified: false }, mission: { maximumBudget: 60000 }, offer: { totalPrice: 49800, items: [] } });
       expect(evaluate(blocked, policy, approval({ guardianInputHash: guardianInputHash(blocked, policy) })).decision).toBe("BLOCKED");
     });
   });
 
   it("policy overrides change the effective policy version", () => {
-    const p2 = loadPolicy({ autonomousLimitUsd: 1000 });
+    const p2 = loadPolicy({ autonomousLimit: 3000 });
     expect(p2.effectiveVersion).not.toBe(policy.effectiveVersion);
     expect(evaluate(input(), p2).decision).toBe("HUMAN_REVIEW_REQUIRED");
   });

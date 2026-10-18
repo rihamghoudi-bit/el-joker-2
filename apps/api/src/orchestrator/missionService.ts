@@ -17,6 +17,7 @@ import {
   type ProofBundle,
   type Supplier,
   type TrailVerification,
+  money,
 } from "@eljoker/shared";
 import type { AiClient } from "../ai/aiClient";
 import type { AppConfig } from "../config";
@@ -89,7 +90,7 @@ export class MissionService {
       beneficiaries: draft?.beneficiaries ?? plan.partial.beneficiaries ?? 0,
       requestedItems: draft?.requestedItems ?? plan.partial.requestedItems ?? [],
       maximumBudget: draft?.maximumBudget ?? plan.partial.maximumBudget ?? 0,
-      currency: "USD",
+      currency: "TND",
       deadline: draft?.deadline ?? plan.partial.deadline ?? nowIso(),
       urgency: draft?.urgency ?? plan.partial.urgency ?? "HIGH",
       constraints: draft?.constraints ?? plan.partial.constraints ?? [],
@@ -101,9 +102,9 @@ export class MissionService {
     };
     store.insertMission(mission, plan.missingFields);
     // The operator's request opens the conversation, exactly as it was sent.
-    const sentText = requestText ?? req.text ?? `${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")} for ${mission.beneficiaries.toLocaleString("en-US")} people in ${mission.location}.`;
+    const sentText = requestText ?? req.text ?? `${mission.description} Budget ${money(mission.maximumBudget)} for ${mission.beneficiaries.toLocaleString("en-US")} people in ${mission.location}.`;
     postFeed(store, missionId, "OPERATOR", "status", sentText, ["REQUEST SENT"], { request: true });
-    this.recordRun({ missionId, agent: "LEM3ALEM", mode: plan.mode, status: plan.status === "CREATED" ? "DONE" : "BLOCKED", input: req, summary: plan.status === "CREATED" ? `Mission created: ${mission.beneficiaries} people, ${mission.location}, $${mission.maximumBudget}` : `Needs information: ${plan.missingFields.join(", ")}`, model: plan.model, fallbackReason: plan.fallbackReason, latencyMs: plan.latencyMs });
+    this.recordRun({ missionId, agent: "LEM3ALEM", mode: plan.mode, status: plan.status === "CREATED" ? "DONE" : "BLOCKED", input: req, summary: plan.status === "CREATED" ? `Mission created: ${mission.beneficiaries} people, ${mission.location}, ${money(mission.maximumBudget)}` : `Needs information: ${plan.missingFields.join(", ")}`, model: plan.model, fallbackReason: plan.fallbackReason, latencyMs: plan.latencyMs });
 
     if (plan.status === "NEEDS_INFORMATION") {
       postFeed(store, missionId, "LEM3ALEM", "alert", `Some information is missing, and I won't guess critical facts. Missing: ${plan.missingFields.join(", ")}.`, ["NEEDS INFORMATION", modeChip(plan.mode, plan.model)], { missingFields: plan.missingFields, notes: plan.notes });
@@ -114,7 +115,7 @@ export class MissionService {
       missionId,
       eventType: "MISSION_CREATED",
       agent: "LEM3ALEM",
-      summary: `Mission created: ${mission.beneficiaries} people in ${mission.location}, budget $${mission.maximumBudget.toLocaleString("en-US")}`,
+      summary: `Mission created: ${mission.beneficiaries} people in ${mission.location}, budget ${money(mission.maximumBudget)}`,
       payload: {
         missionId,
         description: mission.description,
@@ -133,7 +134,7 @@ export class MissionService {
       },
     });
     const org = ORGANIZATIONS[organizationId];
-    postFeed(store, missionId, "LEM3ALEM", "status", `Team, we have a new mission for ${org.name}: ${mission.description} Budget $${mission.maximumBudget.toLocaleString("en-US")}, ${mission.beneficiaries.toLocaleString("en-US")} ${org.peopleLabel}, ${mission.location}.`, ["MISSION CREATED", org.shortName.toUpperCase(), modeChip(plan.mode, plan.model)], { notes: plan.notes, organizationId });
+    postFeed(store, missionId, "LEM3ALEM", "status", `Team, we have a new mission for ${org.name}: ${mission.description} Budget ${money(mission.maximumBudget)}, ${mission.beneficiaries.toLocaleString("en-US")} ${org.peopleLabel}, ${mission.location}.`, ["MISSION CREATED", org.shortName.toUpperCase(), modeChip(plan.mode, plan.model)], { notes: plan.notes, organizationId });
 
     this.startPipeline(missionId);
     return { missionId, status: mission.status, missingFields: [] };
@@ -260,7 +261,7 @@ export class MissionService {
         paymentId: p.paymentId,
         status: p.status,
         source: p.source ?? "OPERATOR",
-        amountUsd: p.amount,
+        amount: p.amount,
         settlementAmount: p.settlementAmount,
         settlementCurrency: p.settlementCurrency,
         settlementTokenId: p.settlementTokenId ?? null,
@@ -361,7 +362,7 @@ export class MissionService {
       missionId,
       eventType: "AI_RECOMMENDATION",
       agent: "LEMHAF",
-      summary: `Recommends ${topSupplier.name} at $${top.totalPrice.toLocaleString("en-US")} (${lem.mode})`,
+      summary: `Recommends ${topSupplier.name} at ${money(top.totalPrice)} (${lem.mode})`,
       payload: {
         mode: lem.mode,
         provider: lem.mode === "REAL_AI" ? "anthropic" : null,
@@ -376,7 +377,7 @@ export class MissionService {
         dataSource: "DEMO_DATA marketplace (fictional suppliers)",
       },
     });
-    postFeed(store, missionId, "LEMHAF", "result", `I found ${offers.length} offers. My pick: ${topSupplier.name} — $${top.totalPrice.toLocaleString("en-US")}, ${top.deliveryTimeHours}h delivery. ${lem.recommendation.summary}`, ["RECOMMENDATION", modeChip(lem.mode, lem.model), "DEMO DATA"], {
+    postFeed(store, missionId, "LEMHAF", "result", `I found ${offers.length} offers. My pick: ${topSupplier.name} — ${money(top.totalPrice)}, ${top.deliveryTimeHours}h delivery. ${lem.recommendation.summary}`, ["RECOMMENDATION", modeChip(lem.mode, lem.model), "DEMO DATA"], {
       recommendation: lem.recommendation,
       fallbackReason: lem.fallbackReason,
     });

@@ -4,8 +4,8 @@
  *   npm run hedera:setup                              topic only (if HEDERA_TOPIC_ID is empty)
  *   npm run hedera:setup -- --payee                   + a demo payee account (receives HBAR)
  *   npm run hedera:setup -- --vault                   + the 2-of-2 vault (agents key + a new approver key)
- *   npm run hedera:setup -- --stablecoin              + the EJUSD demo stablecoin (HTS), a payee that accepts it,
- *                                                       and 100,000.00 EJUSD moved into the vault
+ *   npm run hedera:setup -- --stablecoin              + the EJTND demo dinar token (HTS), a payee that accepts it,
+ *                                                       and 1,000,000 EJTND moved into the vault
  *   npm run hedera:setup -- --vault --stablecoin      both (recommended)
  *
  * The topic's submit key is the operator key, so nobody else can post "proofs" to it.
@@ -104,25 +104,27 @@ try {
   /* ---------- HTS stablecoin ---------- */
   let payeeId = config.hedera.payeeAccountId;
   if (args.has("--stablecoin")) {
-    let tokenId = config.hedera.stablecoin?.tokenId ?? null;
+    // A token created before the switch to dinars (EJUSD) is replaced by the dinar token.
+    let tokenId = config.hedera.stablecoin?.symbol === "EJTND" ? config.hedera.stablecoin.tokenId : null;
+    if (config.hedera.stablecoin && !tokenId) console.log(`Existing token ${config.hedera.stablecoin.tokenId} is ${config.hedera.stablecoin.symbol}, not EJTND — creating the dinar token.`);
     if (tokenId) {
       console.log(`Stablecoin already configured (${tokenId}) — not creating a new one.`);
     } else {
       // Fixed supply (no supply key), no admin key: nobody can mint more or change the token afterwards.
       const tx = await new TokenCreateTransaction()
-        .setTokenName("EL JOKER Demo USD")
-        .setTokenSymbol("EJUSD")
-        .setTokenMemo("Demo stablecoin for EL JOKER (testnet, no real value)")
+        .setTokenName("EL JOKER Demo Dinar")
+        .setTokenSymbol("EJTND")
+        .setTokenMemo("Demo dinar token for EL JOKER (testnet, no real value)")
         .setTokenType(TokenType.FungibleCommon)
-        .setDecimals(2)
-        .setInitialSupply(1_000_000_000) // 10,000,000.00 EJUSD
+        .setDecimals(3) // millimes, like the Tunisian dinar
+        .setInitialSupply(100_000_000_000) // 100,000,000.000 EJTND
         .setSupplyType(TokenSupplyType.Finite)
-        .setMaxSupply(1_000_000_000)
+        .setMaxSupply(100_000_000_000)
         .setTreasuryAccountId(operator)
         .execute(client);
       tokenId = (await tx.getReceipt(client)).tokenId!.toString();
-      console.log(`Created HTS token EJUSD ${tokenId} (10,000,000.00, fixed supply)  https://hashscan.io/testnet/token/${tokenId}`);
-      writeEnv({ HEDERA_STABLECOIN_TOKEN_ID: tokenId, HEDERA_STABLECOIN_SYMBOL: "EJUSD", HEDERA_STABLECOIN_DECIMALS: "2" });
+      console.log(`Created HTS token EJTND ${tokenId} (100,000,000 TND, fixed supply)  https://hashscan.io/testnet/token/${tokenId}`);
+      writeEnv({ HEDERA_STABLECOIN_TOKEN_ID: tokenId, HEDERA_STABLECOIN_SYMBOL: "EJTND", HEDERA_STABLECOIN_DECIMALS: "3" });
 
       // A payee that can receive the token without signing an association (its key is generated and discarded).
       const payeeTx = await new AccountCreateTransaction()
@@ -132,18 +134,18 @@ try {
         .setAccountMemo("EL JOKER demo supplier payee (testnet)")
         .execute(client);
       payeeId = (await payeeTx.getReceipt(client)).accountId!.toString();
-      console.log(`Created demo payee ${payeeId} (accepts EJUSD)  https://hashscan.io/testnet/account/${payeeId}`);
+      console.log(`Created demo payee ${payeeId} (accepts EJTND)  https://hashscan.io/testnet/account/${payeeId}`);
       writeEnv({ HEDERA_PAYEE_ACCOUNT_ID: payeeId });
     }
     if (vaultId) {
-      const units = 10_000_000; // 100,000.00 EJUSD
+      const units = 1_000_000_000; // 1,000,000.000 EJTND
       const fund = await new TransferTransaction()
         .addTokenTransfer(TokenId.fromString(tokenId), operator, -units)
         .addTokenTransfer(TokenId.fromString(tokenId), AccountId.fromString(vaultId), units)
         .setTransactionMemo("EL JOKER: fund the vault")
         .execute(client);
       await fund.getReceipt(client);
-      console.log(`Moved 100,000.00 EJUSD into the vault ${vaultId}`);
+      console.log(`Moved 1,000,000 EJTND into the vault ${vaultId}`);
     }
   }
 

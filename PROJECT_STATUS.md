@@ -172,3 +172,4 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 | Offline rehearsal | `LEDGER_MODE=simulated` forces the stand-in ledger even with credentials | `config.ts` |
 
 Verification (simulated ledger, AI fallback): `npm run typecheck` clean · `npm test` 107/107 · `npm run test:e2e` 7/7 in Edge · `npm run build` OK · UI checked in the browser (vault lock card, co-signed payment, public verifier VALID then TAMPERING DETECTED).
+- 2026-10-18: Everything in Tunisian dinars: missions, offers, reference prices and limits are in TND (NGO policy 2.1.0: 15,000 TND autonomous / 75,000 TND max; ACME policy 1.1.0: 6,000 / 150,000 TND); settlement token EJTND (3 decimals) or scaled HBAR (0.08 ℏ per 1,000 TND); budgets written in dollars are converted at `TND_PER_USD`. Limit env vars renamed `*_TND` so older dollar values in `.env` are ignored. 108 API tests + 7 browser tests pass.

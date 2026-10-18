@@ -15,7 +15,7 @@ describe("Scenario A — approved mission", () => {
     expect(state.verification?.status).toBe("VERIFIED");
     expect(state.payments).toHaveLength(1);
     expect(state.payments[0]!.status).toBe("CONFIRMED");
-    expect(state.payments[0]!.settlementAmount).toBe(1.0375); // $4,150 / 1000 * 0.25 HBAR
+    expect(state.payments[0]!.settlementAmount).toBe(0.996); // 12,450 TND / 1000 * 0.08 HBAR
     expect(state.payments[0]!.hederaTransactionId).toBeNull(); // simulated ledger never invents tx ids
     expect(eventTypes(app, missionId)).toEqual(["MISSION_CREATED", "AI_RECOMMENDATION", "SUPPLIER_VERIFIED", "GUARDIAN_APPROVED", "PAYMENT_INITIATED", "PAYMENT_CONFIRMED"]);
     expect(state.auditEvents.every((e) => e.anchor.status === "SIMULATED")).toBe(true);

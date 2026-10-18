@@ -16,7 +16,7 @@ describe("HTTP API", () => {
     expect(cfg.status).toBe(200);
     expect(JSON.stringify(cfg.body)).not.toMatch(/sk-ant|PRIVATE/i);
     expect(cfg.body.hedera.mode).toBe("SIMULATED");
-    expect(cfg.body.policy.autonomousLimitUsd).toBe(5000);
+    expect(cfg.body.policy.autonomousLimit).toBe(15000);
   });
 
   it("lists the nine scenarios, for two organizations", async () => {

@@ -74,11 +74,11 @@ test("scenario F: proof verified, then a deleted event is detected against the l
   await expect(page.getByText("Missing — deleted from the local database")).toBeVisible();
 });
 
-test("scenario I: ACME (second organization) — its own policy, vault above its $2,000 limit", async ({ page }) => {
+test("scenario I: ACME (second organization) — its own policy, vault above its 6,000 TND limit", async ({ page }) => {
   await enterChat(page);
   await sendScenario(page, /^Scenario I:/);
   await expect(page.getByText(/Team, we have a new mission for ACME Tunisia/)).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText("exceeds the autonomous limit $2,000").first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("exceeds the autonomous limit 6,000 TND").first()).toBeVisible({ timeout: 60_000 });
   await expect(kpi(page, "Payment")).toContainText("Locked in vault");
   await page.getByLabel(/Reason/).fill("Budget line ENG-2026 approved");
   await page.getByLabel("Operator PIN").fill(DEMO_PIN);

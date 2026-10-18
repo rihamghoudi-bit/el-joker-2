@@ -1,7 +1,7 @@
 "use client";
 import { ORGANIZATIONS, organizationOf } from "@eljoker/shared";
 import type { MissionControlModel } from "@/lib/useMissionControl";
-import { usd } from "@/lib/format";
+import { money } from "@/lib/format";
 import { missionChip } from "@/lib/status";
 import { PipelineStrip } from "./PipelineStrip";
 import { ApprovalCard } from "./ApprovalCard";
@@ -45,7 +45,7 @@ export function ConversationPanel({ m }: { m: MissionControlModel }) {
             <>
               {letter && <span className="rounded-md bg-gold px-2 py-0.5 font-display text-[11px] font-bold text-black">{letter}</span>}
               <h1 className="truncate font-display text-base font-semibold">
-                {mission.location} · {usd(mission.maximumBudget)} · {mission.beneficiaries.toLocaleString("en-US")} {org?.peopleLabel ?? "people"}
+                {mission.location} · {money(mission.maximumBudget)} · {mission.beneficiaries.toLocaleString("en-US")} {org?.peopleLabel ?? "people"}
               </h1>
               {org && <Chip label={org.shortName} tone={org.id === "ACME_PROCUREMENT" ? "blue" : "gray"} />}
               <Chip label={missionChip(mission.status)} />

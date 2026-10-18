@@ -89,7 +89,7 @@ previousEventHash = eventHash of the previous event (genesis = 64 zeros)
 HCS message (one chunk, < 1 KB, no personal data, no prices, no documents):
 
 ```json
-{"e":"evt_…","eh":"<eventHash>","h":"<evidenceHash>","m":"msn_…","p":"eljoker","ph":"<previousEventHash>","pv":"2.0.0+…","s":3,"t":"GUARDIAN_APPROVED","ts":"…","v":"1"}
+{"e":"evt_…","eh":"<eventHash>","h":"<evidenceHash>","m":"msn_…","p":"eljoker","ph":"<previousEventHash>","pv":"2.1.0+…","s":3,"t":"GUARDIAN_APPROVED","ts":"…","v":"1"}
 ```
 
 Verification (`verifyMissionTrail`):
@@ -114,11 +114,11 @@ Before any transfer KANAWITA, independently of its caller:
 3. requires a valid human approval (authorized actor, bound to the same input hash + policy version) whenever the policy demanded review;
 4. requires the mission to be unpaid and the idempotency key unused;
 5. (live mode) waits for the `GUARDIAN_APPROVED` proof to be **anchored on Hedera** — no proof, no payment;
-6. computes the scaled demo settlement **from the authorized amount** (`offer USD / 1000 × DEMO_SETTLEMENT_HBAR_PER_1000_USD`, capped at `DEMO_SETTLEMENT_MAX_HBAR`; $4,150 → 1.0375 ℏ), inserts the payment row (DB unique constraints) → `PAYMENT_INITIATED` proof → single-shot `TransferTransaction` (never re-signed on failure; receipt re-queried by the same transaction id) → receipt `SUCCESS` → `PAID` + `PAYMENT_CONFIRMED` proof → async Mirror Node confirmation. Any failure → `PAYMENT_FAILED` proof; never marked paid.
+6. computes the scaled demo settlement **from the authorized amount** (`offer TND / 1000 × DEMO_SETTLEMENT_HBAR_PER_1000_TND`, capped at `DEMO_SETTLEMENT_MAX_HBAR`; 12,450 TND → 0.996 ℏ), inserts the payment row (DB unique constraints) → `PAYMENT_INITIATED` proof → single-shot `TransferTransaction` (never re-signed on failure; receipt re-queried by the same transaction id) → receipt `SUCCESS` → `PAID` + `PAYMENT_CONFIRMED` proof → async Mirror Node confirmation. Any failure → `PAYMENT_FAILED` proof; never marked paid.
 
 An in-process per-mission lock plus the DB constraints make concurrent double execution produce at most one payment (tested).
 
-Settlement asset: with `HEDERA_STABLECOIN_TOKEN_ID` set, payments are **HTS token transfers of the full offer amount** (EJUSD, 2 decimals: $4,150 → 4,150.00 EJUSD); otherwise the scaled HBAR amount above.
+Settlement asset: with `HEDERA_STABLECOIN_TOKEN_ID` set, payments are **HTS token transfers of the full offer amount** (EJTND, 3 decimals like millimes: 12,450 TND → 12,450 EJTND); otherwise the scaled HBAR amount above.
 
 ## The vault: Hedera enforces the human approval
 
@@ -161,7 +161,7 @@ In SIMULATED mode the server hands over its stand-in ledger copies and the page 
 
 High-risk decisions stop in `HUMAN_REVIEW`. An approval needs an authorized operator (`DEMO_OPERATORS`) **and** the operator PIN (`DEMO_OPERATOR_PIN`; documented demo default `0619` only when `DEMO_MODE=true`), compared in constant time with a 60 s lockout after 5 failures. The approval is stored once per mission and bound to the Guardian input hash + policy version it was given for; 3ASES re-runs with it, and an unauthorized, stale or rejected approval can never turn a review into a payment. This is a demo operator mode, not a production identity system.
 
-## 3ASES policy (v2.0.0)
+## 3ASES policy (NGO v2.1.0; ACME v1.1.0 uses the same rules with its own limits)
 
 | Check | Outcome on failure |
 |---|---|
@@ -170,13 +170,13 @@ High-risk decisions stop in `HUMAN_REVIEW`. An approval needs an authorized oper
 | Verified supplier (in registry + verified) | BLOCK |
 | Allowed region (policy list) and supplier serves it | BLOCK |
 | Allowed spending category (WATER, MEDICINE, FOOD, HYGIENE, SHELTER) | BLOCK |
-| Currency match (USD) | BLOCK |
+| Currency match (TND) | BLOCK |
 | Within mission budget | BLOCK |
 | Price anomaly vs reference: > +60% | BLOCK; > +25% or < −40% → REVIEW |
 | Duplicate invoice / missing invoice | BLOCK |
 | Duplicate payment / idempotency key used | BLOCK |
-| Transaction > max ($25,000) | BLOCK |
-| Transaction > autonomous limit ($5,000) | REVIEW |
+| Transaction > max (75,000 TND; ACME 150,000 TND) | BLOCK |
+| Transaction > autonomous limit (15,000 TND; ACME 6,000 TND) | REVIEW |
 | Risk level ≥ human threshold (HIGH) | REVIEW |
 
 Risk score: +40 above autonomous limit, +20 price anomaly, +15 per supplier risk flag, +10 offer ≥ 90% of budget, +10 critical urgency. Bands: <20 LOW, <40 MEDIUM, <70 HIGH, else CRITICAL; any BLOCK ⇒ CRITICAL.

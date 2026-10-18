@@ -97,7 +97,7 @@ export interface ProofBundlePayment {
   paymentId: string;
   status: PaymentStatus;
   source: PaymentSource;
-  amountUsd: number;
+  amount: number;
   settlementAmount: number;
   settlementCurrency: string;
   settlementTokenId: string | null;

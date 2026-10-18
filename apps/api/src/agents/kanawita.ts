@@ -15,11 +15,12 @@
  *     executes the transfer. A rejection deletes the schedule. Hedera enforces the approval instead of just recording it.
  */
 import type { Payment } from "@eljoker/shared";
+import { money } from "@eljoker/shared";
 import type { AppConfig } from "../config";
 import type { ProofService } from "../audit/proofService";
 import { type Store, UniqueViolation } from "../db/store";
 import type { LedgerGateway, SettlementAsset } from "../hedera/gateway";
-import { newId, nowIso, round2 } from "../lib/canonical";
+import { newId, nowIso } from "../lib/canonical";
 import { logger } from "../logger";
 import { approvalEvidence, buildGuardianSnapshot, type GuardianSnapshot, postFeed } from "./context";
 import { evaluate } from "./guardian/engine";
@@ -27,19 +28,19 @@ import type { PolicyRegistry } from "./guardian/policy";
 
 export type PaymentTrigger = "AUTO" | "AFTER_HUMAN_APPROVAL" | "REPLAY";
 
-/** Scaled demo settlement: proportional to the authorized USD amount, capped, 4 decimals (min 0.0001 HBAR). */
-export function settlementFor(amountUsd: number, hbarPer1000Usd: number, maxHbar: number): number {
-  const raw = (amountUsd / 1000) * hbarPer1000Usd;
+/** Scaled HBAR settlement: proportional to the authorized amount in dinars, capped, 4 decimals (min 0.0001 HBAR). */
+export function settlementFor(amount: number, hbarPer1000: number, maxHbar: number): number {
+  const raw = (amount / 1000) * hbarPer1000;
   return Math.max(0.0001, Math.min(maxHbar, Math.round(raw * 10_000) / 10_000));
 }
 
-/** Amount to transfer: the full offer amount in the stablecoin (1 token = 1 USD in the demo), or scaled HBAR. */
-export function settlementAmount(amountUsd: number, asset: SettlementAsset, hbarPer1000Usd: number, maxHbar: number): number {
-  return asset.kind === "TOKEN" ? round2(amountUsd) : settlementFor(amountUsd, hbarPer1000Usd, maxHbar);
+/** Amount to transfer: the full offer amount in the stablecoin (1 token = 1 dinar in the demo), or scaled HBAR. */
+export function settlementAmount(amount: number, asset: SettlementAsset, hbarPer1000: number, maxHbar: number): number {
+  return asset.kind === "TOKEN" ? Math.round(amount * 10 ** asset.decimals) / 10 ** asset.decimals : settlementFor(amount, hbarPer1000, maxHbar);
 }
 
 const fmt = (amount: number, asset: SettlementAsset) =>
-  asset.kind === "TOKEN" ? `${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${asset.symbol}` : `${amount} ℏ`;
+  asset.kind === "TOKEN" ? `${amount.toLocaleString("en-US", { maximumFractionDigits: asset.decimals })} ${asset.symbol}` : `${amount} ℏ`;
 
 export interface PaymentOutcome {
   executed: boolean;
@@ -61,9 +62,9 @@ export class Kanawita {
     },
   ) {}
 
-  private settlementOf(amountUsd: number): number {
+  private settlementOf(amount: number): number {
     const { ledger, config } = this.deps;
-    return settlementAmount(amountUsd, ledger.settlement, config.hedera.hbarPer1000Usd, config.hedera.maxSettlementHbar);
+    return settlementAmount(amount, ledger.settlement, config.hedera.hbarPer1000, config.hedera.maxSettlementHbar);
   }
 
   private settlementFields(): Pick<Payment, "settlementCurrency" | "settlementTokenId"> {
@@ -164,18 +165,18 @@ export class Kanawita {
       missionId,
       eventType: "PAYMENT_INITIATED",
       agent: "KANAWITA",
-      summary: `Payment initiated: ${fmt(settlement, asset)} for the $${offer.totalPrice.toLocaleString("en-US")} offer`,
+      summary: `Payment initiated: ${fmt(settlement, asset)} for the ${money(offer.totalPrice)} offer`,
       payload: {
         paymentId: payment.paymentId,
         idempotencyKey: payment.idempotencyKey,
         offerId: offer.offerId,
         invoiceId: offer.invoiceId,
-        offerAmountUsd: offer.totalPrice,
+        offerAmount: offer.totalPrice,
         source: "OPERATOR",
         settlement:
           asset.kind === "TOKEN"
-            ? { amount: settlement, currency: asset.symbol, tokenId: asset.tokenId, note: "HTS demo stablecoin, 1 token = 1 USD in the demo" }
-            : { amount: settlement, currency: "HBAR", rate: `${config.hedera.hbarPer1000Usd} HBAR per $1,000 (cap ${config.hedera.maxSettlementHbar} HBAR)`, note: "Scaled demo amount on Hedera testnet, proportional to the authorized offer" },
+            ? { amount: settlement, currency: asset.symbol, tokenId: asset.tokenId, note: "HTS demo dinar token, 1 token = 1 TND in the demo" }
+            : { amount: settlement, currency: "HBAR", rate: `${config.hedera.hbarPer1000} HBAR per 1,000 TND (cap ${config.hedera.maxSettlementHbar} HBAR)`, note: "Scaled demo amount on Hedera testnet, proportional to the authorized offer" },
         payeeAccountId: ledger.payeeAccountId,
         mode: ledger.mode,
         authorizationEventId,
@@ -331,7 +332,7 @@ export class Kanawita {
         signedBy: ["agents"],
         offerId: payment.offerId,
         invoiceId: payment.invoiceId,
-        offerAmountUsd: payment.amount,
+        offerAmount: payment.amount,
         settlement: { amount: settlement, currency: asset.symbol, tokenId: asset.kind === "TOKEN" ? asset.tokenId : null },
         payeeAccountId: ledger.payeeAccountId,
         guardianDecisionId: guardian?.decisionId ?? null,

@@ -1,6 +1,6 @@
 import { isLivePayment, type MissionState, ORGANIZATIONS, organizationOf } from "@eljoker/shared";
 import type { ReactNode } from "react";
-import { cx, usd } from "@/lib/format";
+import { cx, money } from "@/lib/format";
 import { ExtLink } from "./ui";
 
 type Tone = "neutral" | "good" | "bad" | "warn" | "busy";
@@ -36,7 +36,7 @@ export function KpiStrip({ state, className }: { state: MissionState; className?
   const supplier = offer ? state.suppliers.find((s) => s.supplierId === offer.supplierId) : null;
   const payment = state.payments.find(isLivePayment) ?? state.payments.find((p) => p.status === "SCHEDULED") ?? state.payments[0] ?? null;
   const org = ORGANIZATIONS[organizationOf(mission)];
-  const amount = payment ? (payment.settlementCurrency === "HBAR" ? `${payment.settlementAmount} ℏ` : `${payment.settlementAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${payment.settlementCurrency}`) : "";
+  const amount = payment ? (payment.settlementCurrency === "HBAR" ? `${payment.settlementAmount} ℏ` : `${payment.settlementAmount.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${payment.settlementCurrency}`) : "";
   const anchored = state.auditEvents.filter((e) => e.anchor.status === "ANCHORED" || e.anchor.status === "SIMULATED").length;
   const pending = state.auditEvents.filter((e) => e.anchor.status === "PENDING").length;
   const lv = state.lastVerification;
@@ -53,10 +53,10 @@ export function KpiStrip({ state, className }: { state: MissionState; className?
 
   return (
     <div className={className ?? "grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6"}>
-      <Kpi label="Budget" value={usd(mission.maximumBudget)} sub={`${mission.beneficiaries.toLocaleString("en-US")} ${org.peopleLabel} · ${mission.location} · ${org.shortName}`} />
+      <Kpi label="Budget" value={money(mission.maximumBudget)} sub={`${mission.beneficiaries.toLocaleString("en-US")} ${org.peopleLabel} · ${mission.location} · ${org.shortName}`} />
       <Kpi
         label="Best offer"
-        value={offer ? usd(offer.totalPrice) : state.currentAgent === "LEMHAF" ? "Searching…" : "—"}
+        value={offer ? money(offer.totalPrice) : state.currentAgent === "LEMHAF" ? "Searching…" : "—"}
         tone={offer ? (offer.totalPrice > mission.maximumBudget ? "bad" : "neutral") : state.currentAgent === "LEMHAF" ? "busy" : "neutral"}
         sub={supplier ? `${supplier.name.replace(" (demo)", "")} · ${supplier.verified ? "verified" : "UNVERIFIED"}` : undefined}
       />

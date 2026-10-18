@@ -81,8 +81,8 @@ export const PolicySummary = z.object({
   organizationId: OrganizationId,
   name: z.string(),
   version: z.string(),
-  autonomousLimitUsd: z.number(),
-  maxTransactionUsd: z.number(),
+  autonomousLimit: z.number(),
+  maxTransaction: z.number(),
   humanReviewRiskLevel: z.string(),
   allowedRegions: z.array(z.string()),
   allowedCategories: z.array(z.string()),
@@ -134,7 +134,7 @@ export const PublicConfig = z.object({
     }),
   }),
   payment: z.object({
-    hbarPer1000Usd: z.number(),
+    hbarPer1000: z.number(),
     maxSettlementHbar: z.number(),
     /** What payments settle in: scaled HBAR, or the HTS stablecoin at the full offer amount. */
     asset: z.enum(["HBAR", "TOKEN"]),
@@ -145,8 +145,8 @@ export const PublicConfig = z.object({
   /** Policy of the default organization (kept for older clients). */
   policy: z.object({
     version: z.string(),
-    autonomousLimitUsd: z.number(),
-    maxTransactionUsd: z.number(),
+    autonomousLimit: z.number(),
+    maxTransaction: z.number(),
     humanReviewRiskLevel: z.string(),
     allowedRegions: z.array(z.string()),
     allowedCategories: z.array(z.string()),

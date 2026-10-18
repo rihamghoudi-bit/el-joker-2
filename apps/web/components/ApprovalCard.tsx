@@ -1,7 +1,7 @@
 "use client";
 import { type MissionState, ORGANIZATIONS, organizationOf, type PublicConfig } from "@eljoker/shared";
 import { useState } from "react";
-import { usd } from "@/lib/format";
+import { money } from "@/lib/format";
 import { Button, Chip, ExtLink, Panel } from "./ui";
 
 export function ApprovalCard({ state, config, onDecide }: { state: MissionState; config: PublicConfig | null; onDecide: (decision: "APPROVED" | "REJECTED", reason: string, actorId: string, pin: string) => Promise<void> }) {
@@ -42,13 +42,13 @@ export function ApprovalCard({ state, config, onDecide }: { state: MissionState;
               <ExtLink href={locked.scheduleHashscanUrl}>schedule {locked.scheduleId}</ExtLink>
             </div>
             <span className="text-ink-300">
-              {locked.settlementCurrency === "HBAR" ? `${locked.settlementAmount} ℏ` : `${locked.settlementAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${locked.settlementCurrency}`} wait in the 2-of-2 vault{locked.vaultAccountId && live ? ` ${locked.vaultAccountId}` : ""}. The agents already signed; the funds move only when your approval adds the approver&apos;s signature, and Hedera executes the transfer itself. Reject, and the schedule is deleted.
+              {locked.settlementCurrency === "HBAR" ? `${locked.settlementAmount} ℏ` : `${locked.settlementAmount.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${locked.settlementCurrency}`} wait in the 2-of-2 vault{locked.vaultAccountId && live ? ` ${locked.vaultAccountId}` : ""}. The agents already signed; the funds move only when your approval adds the approver&apos;s signature, and Hedera executes the transfer itself. Reject, and the schedule is deleted.
             </span>
           </div>
         )}
         <div className="grid grid-cols-2 gap-2 rounded-xl bg-ink-950/50 p-3 text-[12px]">
           <div><div className="text-ink-400">Mission · {org.shortName}</div>{state.mission.beneficiaries.toLocaleString("en-US")} {org.peopleLabel} · {state.mission.location}</div>
-          <div><div className="text-ink-400">Amount</div><b>{usd(offer?.totalPrice)}</b> of {usd(state.mission.maximumBudget)}</div>
+          <div><div className="text-ink-400">Amount</div><b>{money(offer?.totalPrice)}</b> of {money(state.mission.maximumBudget)}</div>
           <div><div className="text-ink-400">Supplier</div>{supplier?.name} {supplier && <Chip label={supplier.verified ? "VERIFIED" : "UNVERIFIED"} />}</div>
           <div><div className="text-ink-400">Risk</div>{g && <Chip label={`RISK ${g.riskLevel}`} />}</div>
           <div><div className="text-ink-400">AI recommendation</div>{lemhaf?.mode === "REAL_AI" ? `Claude (${lemhaf.model})` : "Rule-based fallback"}</div>

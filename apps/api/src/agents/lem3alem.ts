@@ -28,7 +28,7 @@ export const AiMissionExtraction = z.object({
   description: z.string(),
   location: z.string().nullable(),
   beneficiaries: z.number().nullable(),
-  maximumBudgetUsd: z.number().nullable(),
+  maximumBudgetAmount: z.number().nullable(),
   /** Currency the budget was written in. TND is converted with the configured demo rate. */
   budgetCurrency: z.enum(["USD", "TND"]).nullable(),
   urgency: Urgency.nullable(),
@@ -41,7 +41,7 @@ const EXTRACTION_SYSTEM = `You are LEM3ALEM, the mission planner of EL JOKER, a 
 Extract a procurement mission from the operator's request.
 Rules:
 - Only report facts that are explicitly stated. If location, number of people, budget, deadline or urgency is not stated, return null for it. Never guess them.
-- maximumBudgetUsd is the budget amount as written; set budgetCurrency to "TND" if it is in Tunisian dinars (TND, DT, dinars), "USD" if in dollars.
+- maximumBudgetAmount is the budget amount as written; set budgetCurrency to "TND" if it is in Tunisian dinars (TND, DT, dinars), "USD" if in dollars.
 - items: list the supplies requested. Use category WATER, MEDICINE, FOOD, HYGIENE, SHELTER, ELECTRONICS, OFFICE (office supplies, furniture) or OTHER. Set quantity only if the request states it, otherwise null.
 - description: one neutral sentence summarizing the need, without personal data.
 - You do not approve or authorize anything; you only structure the request.`;
@@ -53,15 +53,16 @@ export function ruleBasedExtraction(text: string): AiMissionExtraction {
   const norm = normalizeRegion(text);
   const location = KNOWN_REGIONS.find((r) => norm.includes(normalizeRegion(r))) ?? null;
   const usdMoney = text.match(/\$\s?([\d][\d,.]*)\s*(k)?/i) ?? text.match(/([\d][\d,.]*)\s*(k)?\s*(?:usd|dollars?)\b/i);
-  const tndMoney = usdMoney ? null : text.match(/([\d][\d,.]*)\s*(k)?\s*(?:tnd|dt|dinars?)\b/i);
+  // Dinars by default: "15,000 TND", "15k DT", or just "Budget: 15,000".
+  const tndMoney = usdMoney ? null : (text.match(/([\d][\d,.]*)\s*(k)?\s*(?:tnd|dt|dinars?)\b/i) ?? text.match(/budget[:\s]*([\d][\d,.]*)\s*(k)?/i));
   const money = usdMoney ?? tndMoney;
-  let maximumBudgetUsd: number | null = null;
+  let maximumBudgetAmount: number | null = null;
   if (money?.[1]) {
-    maximumBudgetUsd = Number(money[1].replace(/,/g, ""));
-    if (money[2]) maximumBudgetUsd *= 1000;
+    maximumBudgetAmount = Number(money[1].replace(/,/g, ""));
+    if (money[2]) maximumBudgetAmount *= 1000;
   }
   const budgetCurrency: "USD" | "TND" | null = money ? (tndMoney ? "TND" : "USD") : null;
-  const people = text.match(/([\d][\d,]*)\s*(?:people|persons|residents|beneficiaries|displaced|individuals)/i);
+  const people = text.match(/([\d][\d,]*)\s*(?:people|persons|residents|beneficiaries|displaced|individuals|employees|staff)/i);
   const hours = text.match(/within\s+(\d+)\s*(hours?|h|days?)/i);
   const deadlineHours = hours?.[1] ? Number(hours[1]) * (/day/i.test(hours[2] ?? "") ? 24 : 1) : null;
   const items: AiMissionExtraction["items"] = [];
@@ -80,7 +81,7 @@ export function ruleBasedExtraction(text: string): AiMissionExtraction {
     description: text.trim().slice(0, 300),
     location,
     beneficiaries: people?.[1] ? Number(people[1].replace(/,/g, "")) : null,
-    maximumBudgetUsd,
+    maximumBudgetAmount,
     budgetCurrency,
     urgency,
     deadlineHours,
@@ -142,12 +143,13 @@ export async function planMission(req: CreateMissionRequest, ai: AiClient, opts:
     partial.description ??= extraction.description;
     if (extraction.location) partial.location ??= extraction.location;
     if (extraction.beneficiaries) partial.beneficiaries ??= Math.round(extraction.beneficiaries);
-    if (extraction.maximumBudgetUsd && partial.maximumBudget === undefined) {
-      if (extraction.budgetCurrency === "TND") {
-        partial.maximumBudget = Math.round((extraction.maximumBudgetUsd / opts.tndPerUsd) * 100) / 100;
-        notes.push(`Budget converted from ${extraction.maximumBudgetUsd.toLocaleString("en-US")} TND at ${opts.tndPerUsd} TND/USD (configurable demo rate)`);
+    if (extraction.maximumBudgetAmount && partial.maximumBudget === undefined) {
+      // Missions are in Tunisian dinars. A budget written in dollars is converted at the demo rate.
+      if (extraction.budgetCurrency === "USD") {
+        partial.maximumBudget = Math.round(extraction.maximumBudgetAmount * opts.tndPerUsd * 1000) / 1000;
+        notes.push(`Budget converted from $${extraction.maximumBudgetAmount.toLocaleString("en-US")} at ${opts.tndPerUsd} TND/USD (configurable demo rate)`);
       } else {
-        partial.maximumBudget = extraction.maximumBudgetUsd;
+        partial.maximumBudget = extraction.maximumBudgetAmount;
       }
     }
     if (extraction.urgency) partial.urgency ??= extraction.urgency;

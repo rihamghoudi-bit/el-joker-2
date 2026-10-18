@@ -11,8 +11,13 @@ export type AgentName = z.infer<typeof AgentName>;
 export const ExecutionMode = z.enum(["REAL_AI", "FALLBACK", "DEMO_DATA", "DETERMINISTIC"]);
 export type ExecutionMode = z.infer<typeof ExecutionMode>;
 
-export const Currency = z.enum(["USD"]);
+/** Missions, offers, limits and payments are in Tunisian dinars (USD is kept for older records). */
+export const Currency = z.enum(["TND", "USD"]);
 export type Currency = z.infer<typeof Currency>;
+
+/** "12,450 TND" — dinars have 3 decimals (millimes); whole amounts are shown without decimals. */
+export const money = (n: number | null | undefined, currency: string = "TND"): string =>
+  n == null ? "—" : `${n.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${currency}`;
 
 export const Urgency = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 export type Urgency = z.infer<typeof Urgency>;
@@ -115,7 +120,7 @@ export const MissionDraft = z.object({
   beneficiaries: z.number().int().positive().max(10_000_000),
   requestedItems: z.array(RequestedItem).min(1).max(20),
   maximumBudget: z.number().positive().max(100_000_000),
-  currency: Currency.default("USD"),
+  currency: Currency.default("TND"),
   deadline: z.string().datetime().optional(),
   urgency: Urgency.default("HIGH"),
   constraints: z.array(z.string().max(200)).max(10).default([]),

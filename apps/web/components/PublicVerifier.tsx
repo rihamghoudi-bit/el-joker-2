@@ -3,7 +3,7 @@ import { type BundleVerification, type LedgerCopy, type MissionSummary, ORGANIZA
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
-import { cx, shortHash, usd } from "@/lib/format";
+import { cx, shortHash, money } from "@/lib/format";
 import { missionChip } from "@/lib/status";
 import { Backdrop } from "./Backdrop";
 import { Logo } from "./Logo";
@@ -62,8 +62,8 @@ const HASHSCAN = "https://hashscan.io/testnet";
 async function checkPayments(bundle: ProofBundle, live: boolean): Promise<PaymentCheck[]> {
   const out: PaymentCheck[] = [];
   for (const p of bundle.payments) {
-    const amount = p.settlementCurrency === "HBAR" ? `${p.settlementAmount} ℏ` : `${p.settlementAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${p.settlementCurrency}`;
-    const label = `${p.source === "VAULT" ? "Vault payment (2-of-2)" : "Payment"} · ${amount} for a ${usd(p.amountUsd)} offer · ${p.status}`;
+    const amount = p.settlementCurrency === "HBAR" ? `${p.settlementAmount} ℏ` : `${p.settlementAmount.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${p.settlementCurrency}`;
+    const label = `${p.source === "VAULT" ? "Vault payment (2-of-2)" : "Payment"} · ${amount} for a ${money(p.amount)} offer · ${p.status}`;
     if (!live) {
       out.push({ paymentId: p.paymentId, label, ok: null, lines: ["Simulated ledger: there is no public network to read this payment from."], links: [] });
       continue;
@@ -235,7 +235,7 @@ export function PublicVerifier() {
                 >
                   <div className="font-semibold text-white">
                     {m.scenarioId ? `${m.scenarioId.slice(0, 1)} · ` : ""}
-                    {m.location} · {usd(m.maximumBudget)}
+                    {m.location} · {money(m.maximumBudget)}
                   </div>
                   <div className="text-ink-400">
                     {ORGANIZATIONS[m.organizationId ?? "NGO_RELIEF"].shortName} · {missionChip(m.status)}

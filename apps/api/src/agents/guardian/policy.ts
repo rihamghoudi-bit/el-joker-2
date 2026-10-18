@@ -10,8 +10,8 @@ export interface Policy {
   currency: string;
   allowedRegions: string[];
   allowedCategories: string[];
-  autonomousLimitUsd: number;
-  maxTransactionUsd: number;
+  autonomousLimit: number;
+  maxTransaction: number;
   humanReviewRiskLevel: RiskLevel;
   priceAnomaly: { reviewAbovePct: number; blockAbovePct: number; reviewBelowPct: number };
   budgetWarningRatio: number;
@@ -22,8 +22,8 @@ export interface Policy {
 }
 
 export interface PolicyOverrides {
-  autonomousLimitUsd?: number;
-  maxTransactionUsd?: number;
+  autonomousLimit?: number;
+  maxTransaction?: number;
   humanReviewRiskLevel?: RiskLevel;
 }
 
@@ -51,11 +51,11 @@ export function loadPolicy(overrides: PolicyOverrides = {}, organizationId: Orga
   const policy: Policy = {
     ...file,
     humanReviewRiskLevel: (o.humanReviewRiskLevel ?? file.humanReviewRiskLevel) as RiskLevel,
-    autonomousLimitUsd: o.autonomousLimitUsd ?? file.autonomousLimitUsd,
-    maxTransactionUsd: o.maxTransactionUsd ?? file.maxTransactionUsd,
+    autonomousLimit: o.autonomousLimit ?? file.autonomousLimit,
+    maxTransaction: o.maxTransaction ?? file.maxTransaction,
     referencePrices: { ...REFERENCE_PRICES },
   };
-  if (policy.autonomousLimitUsd > policy.maxTransactionUsd) {
+  if (policy.autonomousLimit > policy.maxTransaction) {
     throw new Error(`Policy invalid (${organizationId}): autonomous limit exceeds maximum transaction limit`);
   }
   const hash = hashCanonical(policy);
@@ -95,8 +95,8 @@ export class PolicyRegistry {
       organizationId: p.organizationId,
       name: p.name,
       version: p.effectiveVersion,
-      autonomousLimitUsd: p.autonomousLimitUsd,
-      maxTransactionUsd: p.maxTransactionUsd,
+      autonomousLimit: p.autonomousLimit,
+      maxTransaction: p.maxTransaction,
       humanReviewRiskLevel: p.humanReviewRiskLevel,
       allowedRegions: p.allowedRegions,
       allowedCategories: p.allowedCategories,

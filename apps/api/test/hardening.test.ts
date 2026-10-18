@@ -158,11 +158,18 @@ describe("Settlement is tied to the authorized amount", () => {
 });
 
 describe("Budgets in Tunisian dinars", () => {
-  it("converts TND with the configured demo rate and says so", async () => {
+  it("keeps a dinar budget as written", async () => {
     const r = await planMission({ text: "300 people in Sfax need drinking water, budget 15,500 TND within 48 hours" }, noAi, { tndPerUsd: 3.1 });
     expect(r.status).toBe("CREATED");
-    expect(r.draft?.maximumBudget).toBe(5000);
-    expect(r.notes.join(" ")).toMatch(/converted from 15,500 TND at 3\.1 TND\/USD/);
+    expect(r.draft?.maximumBudget).toBe(15500);
+    expect(r.draft?.currency).toBe("TND");
+    expect(r.notes.join(" ")).not.toMatch(/converted/);
+  });
+
+  it("converts a dollar budget to dinars with the configured demo rate and says so", async () => {
+    const r = await planMission({ text: "300 people in Sfax need drinking water, budget $5,000 within 48 hours" }, noAi, { tndPerUsd: 3.1 });
+    expect(r.draft?.maximumBudget).toBe(15500);
+    expect(r.notes.join(" ")).toMatch(/converted from \$5,000 at 3\.1 TND\/USD/);
   });
 });
 

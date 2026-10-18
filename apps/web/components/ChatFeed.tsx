@@ -2,7 +2,7 @@
 import type { FeedMessage, GuardianDecision, MissionState, Recommendation, VerificationResult } from "@eljoker/shared";
 import { type ReactNode, useEffect, useRef } from "react";
 import { AGENTS } from "@/lib/agents";
-import { cx, time, usd } from "@/lib/format";
+import { cx, time, money } from "@/lib/format";
 import { Avatar, Chip, ExtLink } from "./ui";
 
 function CheckList({ items }: { items: { label: string; ok: boolean | "review"; detail: string }[] }) {
@@ -156,8 +156,8 @@ export function ChatFeed({ state, footer }: { state: MissionState; footer?: Reac
         {state.mission.status === "PAID" && state.payments[0] && (
           <p className="text-center text-xs text-ink-400">
             {state.payments[0].settlementCurrency === "HBAR"
-              ? `Settlement is a scaled demo amount (${state.payments[0].settlementAmount} ℏ) representing the ${usd(state.payments[0].amount)} offer.`
-              : `Settled in full: ${state.payments[0].settlementAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${state.payments[0].settlementCurrency}, the HTS demo stablecoin (1 token = 1 USD in the demo, no real value).`}
+              ? `Settlement is a scaled demo amount (${state.payments[0].settlementAmount} ℏ) representing the ${money(state.payments[0].amount)} offer.`
+              : `Settled in full: ${state.payments[0].settlementAmount.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${state.payments[0].settlementCurrency}, the HTS demo dinar token (1 token = 1 TND in the demo, no real value).`}
           </p>
         )}
       </div>

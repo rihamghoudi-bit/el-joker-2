@@ -1,11 +1,11 @@
 {
   "name": "ACME Tunisia corporate purchasing policy (demo)",
-  "version": "1.0.0",
-  "currency": "USD",
+  "version": "1.1.0",
+  "currency": "TND",
   "allowedRegions": ["Tunis", "Sousse", "Sfax"],
   "allowedCategories": ["ELECTRONICS", "OFFICE"],
-  "autonomousLimitUsd": 2000,
-  "maxTransactionUsd": 50000,
+  "autonomousLimit": 6000,
+  "maxTransaction": 150000,
   "humanReviewRiskLevel": "HIGH",
   "priceAnomaly": {
     "reviewAbovePct": 20,

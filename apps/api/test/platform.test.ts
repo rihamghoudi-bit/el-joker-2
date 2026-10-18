@@ -13,23 +13,23 @@ afterEach(() => app?.close());
 const nodeSha = async (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 
 describe("Second use case — ACME company procurement (same agents, another policy)", () => {
-  it("H: office supplies inside ACME's $2,000 limit are paid autonomously under ACME policy 1.0.0", async () => {
+  it("H: office supplies inside ACME's 6,000 TND limit are paid autonomously under ACME policy 1.1.0", async () => {
     app = await makeTestApp();
     const { missionId, state } = await runScenarioToRest(app, "H_ACME_SUPPLIES");
     expect(state.mission.organizationId).toBe("ACME_PROCUREMENT");
     expect(state.mission.status).toBe("PAID");
     expect(state.payments[0]).toMatchObject({ status: "CONFIRMED", source: "OPERATOR" });
-    expect(state.guardianDecision?.policyVersion).toMatch(/^1\.0\.0\+/);
-    expect(state.guardianDecision?.checks.find((c) => c.id === "TRANSACTION_LIMIT")?.detail).toMatch(/\$2,000/);
+    expect(state.guardianDecision?.policyVersion).toMatch(/^1\.1\.0\+/);
+    expect(state.guardianDecision?.checks.find((c) => c.id === "TRANSACTION_LIMIT")?.detail).toMatch(/6,000 TND/);
     // Every proof of this mission carries ACME's policy version, on the same ledger topic as the NGO.
-    expect(app.store.listAuditEvents(missionId).every((e) => e.policyVersion.startsWith("1.0.0+"))).toBe(true);
+    expect(app.store.listAuditEvents(missionId).every((e) => e.policyVersion.startsWith("1.1.0+"))).toBe(true);
   });
 
   it("I: laptops above ACME's limit go to human review and the vault", async () => {
     app = await makeTestApp();
     const { missionId, state } = await runScenarioToRest(app, "I_ACME_LAPTOPS");
     expect(state.mission.status).toBe("HUMAN_REVIEW");
-    expect(state.offers.find((o) => o.offerId === state.recommendation?.recommendedOfferId)?.totalPrice).toBe(11820);
+    expect(state.offers.find((o) => o.offerId === state.recommendation?.recommendedOfferId)?.totalPrice).toBe(35460);
     expect(state.payments).toMatchObject([{ status: "SCHEDULED", source: "VAULT" }]);
     await app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "Budget line ENG-2026 approved", actorId: "ops-lead", pin: "0619" });
     await app.missions.idle(missionId);
@@ -40,13 +40,13 @@ describe("Second use case — ACME company procurement (same agents, another pol
     app = await makeTestApp();
     expect(app.policies.get("NGO_RELIEF").allowedCategories).not.toContain("ELECTRONICS");
     expect(app.policies.get("ACME_PROCUREMENT").allowedCategories).not.toContain("MEDICINE");
-    expect(app.policies.get("ACME_PROCUREMENT").autonomousLimitUsd).toBe(2000);
+    expect(app.policies.get("ACME_PROCUREMENT").autonomousLimit).toBe(6000);
     expect(app.policies.get("NGO_RELIEF").effectiveVersion).not.toBe(app.policies.get("ACME_PROCUREMENT").effectiveVersion);
   });
 
   it("free text naming ACME is planned for ACME", async () => {
     app = await makeTestApp();
-    const out = await app.missions.createMission({ text: "ACME Tunisia: 12 laptops for 12 employees in Tunis. Budget: $15,000. Delivery within 7 days." });
+    const out = await app.missions.createMission({ text: "ACME Tunisia: 12 laptops for 12 employees in Tunis. Budget: 45,000 TND. Delivery within 7 days." });
     expect(app.store.getMission(out.missionId)?.organizationId).toBe("ACME_PROCUREMENT");
   });
 });
@@ -110,9 +110,9 @@ describe("Hedera vault — the approval is enforced by the ledger", () => {
   });
 
   it("settles the full offer amount in the stablecoin, or a scaled amount in HBAR", () => {
-    expect(settlementAmount(16600, { kind: "TOKEN", symbol: "EJUSD", tokenId: "0.0.1", decimals: 2 }, 0.25, 10)).toBe(16600);
-    expect(settlementAmount(4150.005, { kind: "TOKEN", symbol: "EJUSD", tokenId: "0.0.1", decimals: 2 }, 0.25, 10)).toBe(4150.01);
-    expect(settlementAmount(16600, { kind: "HBAR", symbol: "HBAR" }, 0.25, 10)).toBe(4.15);
+    expect(settlementAmount(49800, { kind: "TOKEN", symbol: "EJTND", tokenId: "0.0.1", decimals: 3 }, 0.08, 10)).toBe(49800);
+    expect(settlementAmount(1234.5678, { kind: "TOKEN", symbol: "EJTND", tokenId: "0.0.1", decimals: 3 }, 0.08, 10)).toBe(1234.568);
+    expect(settlementAmount(49800, { kind: "HBAR", symbol: "HBAR" }, 0.08, 10)).toBe(3.984);
   });
 });
 

@@ -1,5 +1,5 @@
 import type { MissionSummary } from "@eljoker/shared";
-import { cx, usd } from "@/lib/format";
+import { cx, money } from "@/lib/format";
 import { missionChip } from "@/lib/status";
 import { Button, Chip } from "./ui";
 
@@ -17,7 +17,7 @@ export function HistoryList({ missions, activeId, onOpen, onNew }: { missions: M
             type="button"
             onClick={() => onOpen(m.missionId)}
             aria-current={activeId === m.missionId ? "true" : undefined}
-            aria-label={`${m.scenarioId ? `Scenario ${m.scenarioId.slice(0, 1)}, ` : ""}${m.location}, ${usd(m.maximumBudget)}, ${missionChip(m.status)}`}
+            aria-label={`${m.scenarioId ? `Scenario ${m.scenarioId.slice(0, 1)}, ` : ""}${m.location}, ${money(m.maximumBudget)}, ${missionChip(m.status)}`}
             className={cx("w-full rounded-2xl px-3 py-2.5 text-left transition hover:bg-white/[0.05]", activeId === m.missionId && "bg-indigo/15 ring-1 ring-indigo/40")}
           >
             <div className="flex items-center justify-between gap-2">
@@ -28,7 +28,7 @@ export function HistoryList({ missions, activeId, onOpen, onNew }: { missions: M
               <Chip label={missionChip(m.status)} className="px-2 py-0.5 text-[9.5px]" />
             </div>
             <div className="mt-0.5 truncate text-[11.5px] text-ink-400">
-              {usd(m.maximumBudget)} · {m.description}
+              {money(m.maximumBudget)} · {m.description}
             </div>
           </button>
         ))}

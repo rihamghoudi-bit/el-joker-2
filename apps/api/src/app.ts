@@ -47,7 +47,7 @@ export function createApp(s: AppServices) {
         },
       },
       payment: {
-        hbarPer1000Usd: s.config.hedera.hbarPer1000Usd,
+        hbarPer1000: s.config.hedera.hbarPer1000,
         maxSettlementHbar: s.config.hedera.maxSettlementHbar,
         asset: s.ledger.settlement.kind,
         symbol: s.ledger.settlement.symbol,
@@ -56,8 +56,8 @@ export function createApp(s: AppServices) {
       },
       policy: {
         version: s.policy.effectiveVersion,
-        autonomousLimitUsd: s.policy.autonomousLimitUsd,
-        maxTransactionUsd: s.policy.maxTransactionUsd,
+        autonomousLimit: s.policy.autonomousLimit,
+        maxTransaction: s.policy.maxTransaction,
         humanReviewRiskLevel: s.policy.humanReviewRiskLevel,
         allowedRegions: s.policy.allowedRegions,
         allowedCategories: s.policy.allowedCategories,
