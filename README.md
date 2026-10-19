@@ -201,9 +201,10 @@ el-joker-2/
 ## Live on Hedera testnet
 
 - Proof topic: [`0.0.11007004`](https://hashscan.io/testnet/topic/0.0.11007004) — every decision of every mission is anchored there.
-- Verified 2026-10-12: `npm run test:testnet` 2/2, `npm run demo:check` 8/8 on testnet with real Claude (`claude-opus-5-5`).
-- Example payment (scenario A, 1.0375 HBAR, before the switch to dinars, memo `eljoker:<mission>:<idempotency>`): [HashScan](https://hashscan.io/testnet/transaction/0.0.10569347-1791831141-287680039).
-- Vault, EJTND, dinar amounts and the public verifier: built and tested against the simulated ledger (108 unit + 7 browser tests); run `npm run hedera:setup -- --vault --stablecoin`, then `npm run test:testnet` and `npm run demo:check` to verify them live.
+- 2-of-2 vault: [`0.0.11090535`](https://hashscan.io/testnet/account/0.0.11090535) · EJTND demo dinar token: [`0.0.11090536`](https://hashscan.io/testnet/token/0.0.11090536) · demo supplier: [`0.0.11090539`](https://hashscan.io/testnet/account/0.0.11090539).
+- Verified 2026-10-19: `npm run demo:check` 11/11 on testnet with real Claude (`claude-opus-5-5`): the 9 scenarios A–I, deleted-event detection and the independent public verifier, vault and EJTND included.
+- Example payment (scenario A, 12,450 EJTND): [HashScan](https://hashscan.io/testnet/transaction/1792450276.030571723) · example vault schedule, executed after the human co-signature (scenario E): [HashScan](https://hashscan.io/testnet/schedule/0.0.11090802).
+- Earlier run (2026-10-12, before the switch to dinars): `npm run test:testnet` 2/2, `demo:check` 8/8, payment of 1.0375 HBAR: [HashScan](https://hashscan.io/testnet/transaction/0.0.10569347-1791831141-287680039).
 
 ## License
 
