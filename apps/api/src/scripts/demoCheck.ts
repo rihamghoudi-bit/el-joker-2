@@ -113,7 +113,8 @@ let acmeMission = "";
   const id = await run("H_ACME_SUPPLIES");
   acmeMission = id;
   const s = await waitFor(id, (x) => ["PAID", "PAYMENT_FAILED", "BLOCKED", "FAILED", "HUMAN_REVIEW"].includes(x.mission.status));
-  record("H ACME office supplies", s.mission.status === "PAID" && (s.guardianDecision?.policyVersion ?? "").startsWith("1.0.0"), `${s.mission.status} · ACME policy ${s.guardianDecision?.policyVersion} · ${s.payments[0]?.settlementAmount ?? "-"} ${s.payments[0]?.settlementCurrency ?? ""}`);
+  const acmeVersion = cfg.policies.find((p) => p.organizationId === "ACME_PROCUREMENT")?.version;
+  record("H ACME office supplies", s.mission.status === "PAID" && !!acmeVersion && s.guardianDecision?.policyVersion === acmeVersion, `${s.mission.status} · ACME policy ${s.guardianDecision?.policyVersion} · ${s.payments[0]?.settlementAmount ?? "-"} ${s.payments[0]?.settlementCurrency ?? ""}`);
 }
 // I — ACME above its limit → vault
 {
