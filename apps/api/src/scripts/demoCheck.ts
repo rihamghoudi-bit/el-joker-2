@@ -1,10 +1,11 @@
 /**
- * Runs all six jury scenarios against a RUNNING API (default http://localhost:4000) and prints a report.
+ * Runs every jury scenario (NGO A–G, ACME H–I) plus the public verification against a RUNNING API (default http://localhost:4000) and prints a report.
  * Usage: npm run demo:check            (API must be running: npm run dev)
  *        API_URL=http://host:4000 npm run demo:check
  * Note: with Hedera credentials configured this spends a few testnet HBAR (HCS fees + 1 HBAR demo settlements).
  */
-import type { MissionState, PublicConfig, TrailVerification } from "@eljoker/shared";
+import { createHash } from "node:crypto";
+import { type LedgerCopy, type MissionState, type ProofBundle, type PublicConfig, type TrailVerification, verifyBundle } from "@eljoker/shared";
 
 const API = process.env.API_URL ?? "http://localhost:4000";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -72,10 +73,13 @@ console.log(`EL JOKER demo check · API ${API} · ledger ${cfg.hedera.mode}${cfg
 {
   const id = await run("E_HUMAN_REVIEW");
   const s1 = await waitFor(id, (x) => ["HUMAN_REVIEW", "BLOCKED", "FAILED", "PAID"].includes(x.mission.status));
-  const okReview = s1.mission.status === "HUMAN_REVIEW" && s1.payments.length === 0;
+  // During review the only payment allowed is the one locked in the vault (SCHEDULED), never a live one.
+  const okReview = s1.mission.status === "HUMAN_REVIEW" && s1.payments.every((p) => p.status === "SCHEDULED");
+  const lockedOnLedger = s1.payments.some((p) => p.status === "SCHEDULED" && p.scheduleId);
   await call(`/api/missions/${id}/approvals`, "POST", { decision: "APPROVED", reason: "Need confirmed by field team (demo check)", actorId: cfg.operators[0], pin: process.env.DEMO_OPERATOR_PIN || "0619" });
   const s2 = await waitFor(id, (x) => ["PAID", "PAYMENT_FAILED", "BLOCKED", "REJECTED", "FAILED"].includes(x.mission.status));
-  record("E human review", okReview && s2.mission.status === "PAID", `review stopped payment: ${okReview} · after approval: ${s2.mission.status}`);
+  record("E human review + vault", okReview && s2.mission.status === "PAID", `review stopped payment: ${okReview} · locked in vault: ${lockedOnLedger} (${s1.payments[0]?.scheduleId ?? "vault off"}) · after approval: ${s2.mission.status} via ${s2.payments[0]?.source ?? "?"}`);
+  if (s2.payments[0]?.scheduleHashscanUrl) console.log(`      schedule: ${s2.payments[0].scheduleHashscanUrl}`);
 }
 // F
 {
@@ -101,6 +105,41 @@ console.log(`EL JOKER demo check · API ${API} · ledger ${cfg.hedera.mode}${cfg
   const s = await waitFor(id, (x) => ["BLOCKED", "FAILED", "PAID", "HUMAN_REVIEW"].includes(x.mission.status));
   const dup = s.verification?.checks.find((c) => c.id === "DUPLICATE_INVOICE");
   record("G recycled invoice", s.mission.status === "BLOCKED" && dup?.passed === false && s.payments.length === 0, `NASNES ${s.verification?.status} (${dup?.detail}) · 3ASES ${s.guardianDecision?.decision}`);
+}
+
+// H — ACME (second organization), inside its autonomous limit
+let acmeMission = "";
+{
+  const id = await run("H_ACME_SUPPLIES");
+  acmeMission = id;
+  const s = await waitFor(id, (x) => ["PAID", "PAYMENT_FAILED", "BLOCKED", "FAILED", "HUMAN_REVIEW"].includes(x.mission.status));
+  const acmeVersion = cfg.policies.find((p) => p.organizationId === "ACME_PROCUREMENT")?.version;
+  record("H ACME office supplies", s.mission.status === "PAID" && !!acmeVersion && s.guardianDecision?.policyVersion === acmeVersion, `${s.mission.status} · ACME policy ${s.guardianDecision?.policyVersion} · ${s.payments[0]?.settlementAmount ?? "-"} ${s.payments[0]?.settlementCurrency ?? ""}`);
+}
+// I — ACME above its limit → vault
+{
+  const id = await run("I_ACME_LAPTOPS");
+  const s1 = await waitFor(id, (x) => ["HUMAN_REVIEW", "BLOCKED", "FAILED", "PAID"].includes(x.mission.status));
+  await call(`/api/missions/${id}/approvals`, "POST", { decision: "APPROVED", reason: "Budget line ENG-2026 (demo check)", actorId: cfg.operators[0], pin: process.env.DEMO_OPERATOR_PIN || "0619" });
+  const s2 = await waitFor(id, (x) => ["PAID", "PAYMENT_FAILED", "BLOCKED", "REJECTED", "FAILED"].includes(x.mission.status));
+  record("I ACME laptops + vault", s1.mission.status === "HUMAN_REVIEW" && s2.mission.status === "PAID", `review: ${s1.mission.status} · after approval: ${s2.mission.status} via ${s2.payments[0]?.source ?? "?"}`);
+}
+// Public verifier: recompute everything here, against ledger copies read independently (Mirror Node when live)
+{
+  const bundle = (await call<ProofBundle>(`/api/public/missions/${acmeMission}/bundle`)).body;
+  let copies: LedgerCopy[] = bundle.simulatedLedger ?? [];
+  if (bundle.ledgerMode === "LIVE_TESTNET" && bundle.topicId) {
+    copies = [];
+    const since = (Date.parse(bundle.missionCreatedAt) / 1000 - 300).toFixed(9);
+    let next: string | null = `/api/v1/topics/${bundle.topicId}/messages?limit=100&order=asc&timestamp=gte:${since}`;
+    for (let page = 0; next && page < 30; page++) {
+      const body = (await (await fetch(`${bundle.mirrorNodeUrl}${next}`)).json()) as { messages?: { message: string; sequence_number: number; consensus_timestamp: string }[]; links?: { next?: string | null } };
+      for (const m of body.messages ?? []) copies.push({ sequenceNumber: m.sequence_number, consensusTimestamp: m.consensus_timestamp, message: Buffer.from(m.message, "base64").toString("utf8") });
+      next = body.links?.next ?? null;
+    }
+  }
+  const v = await verifyBundle(bundle, copies, async (t) => createHash("sha256").update(t, "utf8").digest("hex"));
+  record("Public verifier (independent)", v.overall === "VALID", `${v.overall} · ${v.events.length} events recomputed · ledger chain ${v.ledgerChain.count} linked=${v.ledgerChain.linked}`);
 }
 
 const failed = results.filter((r) => !r.ok);

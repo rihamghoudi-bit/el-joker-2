@@ -1,6 +1,7 @@
 "use client";
+import { ORGANIZATIONS, organizationOf } from "@eljoker/shared";
 import type { MissionControlModel } from "@/lib/useMissionControl";
-import { usd } from "@/lib/format";
+import { money } from "@/lib/format";
 import { missionChip } from "@/lib/status";
 import { PipelineStrip } from "./PipelineStrip";
 import { ApprovalCard } from "./ApprovalCard";
@@ -19,8 +20,9 @@ function Welcome() {
               Lem3alem <span className="ml-1 text-[11px] font-normal tracking-wide text-ink-400 uppercase">Coordinator</span>
             </div>
             <div className="rounded-3xl rounded-tl-md border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-[15px] leading-relaxed">
-              Hi, I&apos;m Lem3alem, EL JOKER&apos;s coordinator. Tell me what your mission needs: who, where, what and the budget. Lemhaf will research suppliers, Nasnes will verify the evidence, 3ases will apply the spending rules, Kanawita will pay only if authorized, and Hedera will prove every step.
-              <span className="mt-3 block text-ink-300">A ready-made request is already in the message box — press send to launch the mission, or pick another scenario.</span>
+              Hi, I&apos;m Lem3alem, EL JOKER&apos;s coordinator. Tell me what you need to buy: who it is for, where, what and the budget. Lemhaf will research suppliers, Nasnes will verify the evidence, 3ases will apply your organization&apos;s spending rules, Kanawita will pay only if authorized, and Hedera will prove every step.
+              <span className="mt-3 block text-ink-300">Above the autonomous limit, the payment is locked in a 2-of-2 Hedera vault: my team holds one key, a human approver holds the other.</span>
+              <span className="mt-3 block text-ink-300">A ready-made request is already in the message box — press send, or pick another scenario. A to G are a relief NGO; H and I are a company (ACME) with its own policy.</span>
             </div>
           </div>
         </div>
@@ -34,6 +36,7 @@ export function ConversationPanel({ m }: { m: MissionControlModel }) {
   const { state, activeId } = m;
   const mission = state?.mission;
   const letter = mission?.scenarioId?.slice(0, 1);
+  const org = mission ? ORGANIZATIONS[organizationOf(mission)] : null;
   return (
     <section className="glass flex h-[82vh] min-h-[560px] flex-col overflow-hidden rounded-3xl xl:h-auto xl:min-h-0">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-3">
@@ -42,8 +45,9 @@ export function ConversationPanel({ m }: { m: MissionControlModel }) {
             <>
               {letter && <span className="rounded-md bg-gold px-2 py-0.5 font-display text-[11px] font-bold text-black">{letter}</span>}
               <h1 className="truncate font-display text-base font-semibold">
-                {mission.location} · {usd(mission.maximumBudget)} · {mission.beneficiaries.toLocaleString("en-US")} people
+                {mission.location} · {money(mission.maximumBudget)} · {mission.beneficiaries.toLocaleString("en-US")} {org?.peopleLabel ?? "people"}
               </h1>
+              {org && <Chip label={org.shortName} tone={org.id === "ACME_PROCUREMENT" ? "blue" : "gray"} />}
               <Chip label={missionChip(mission.status)} />
             </>
           ) : (

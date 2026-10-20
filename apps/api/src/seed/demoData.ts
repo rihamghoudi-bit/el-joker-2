@@ -5,7 +5,19 @@ import type { ItemCategory, MissionDraftInput, RequestedItem, ScenarioId, Scenar
  * Registry entries are a simulated procurement registry, not a real authority.
  */
 
-export type ItemKey = "water_bottle" | "medicine_kit" | "ors" | "hygiene_kit" | "food_parcel" | "shelter_kit" | "electronics" | "other";
+export type ItemKey =
+  | "water_bottle"
+  | "medicine_kit"
+  | "ors"
+  | "hygiene_kit"
+  | "food_parcel"
+  | "shelter_kit"
+  | "electronics"
+  | "laptop"
+  | "monitor"
+  | "office_chair"
+  | "office_supplies"
+  | "other";
 
 export interface DemoSupplier extends Supplier {
   priceList: Partial<Record<ItemKey, number>>;
@@ -30,7 +42,7 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     riskFlags: [],
     claims: ["Licensed pharmacy wholesaler", "Cold-chain capable"],
     isDemo: true,
-    priceList: { water_bottle: 0.5, medicine_kit: 42, ors: 0.55, hygiene_kit: 9.5 },
+    priceList: { water_bottle: 1.5, medicine_kit: 126, ors: 1.65, hygiene_kit: 28.5 },
     deliveryHours: 20,
     bidsOnlyOnRush: false,
     hasLicenseEvidence: true,
@@ -47,7 +59,7 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     riskFlags: [],
     claims: ["Regional humanitarian logistics partner"],
     isDemo: true,
-    priceList: { water_bottle: 0.47, medicine_kit: 46, ors: 0.6, hygiene_kit: 10, food_parcel: 24 },
+    priceList: { water_bottle: 1.41, medicine_kit: 138, ors: 1.8, hygiene_kit: 30, food_parcel: 72 },
     deliveryHours: 36,
     bidsOnlyOnRush: false,
     hasLicenseEvidence: true,
@@ -64,7 +76,7 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     riskFlags: [],
     claims: ["Warehouse in Médenine"],
     isDemo: true,
-    priceList: { water_bottle: 0.48, medicine_kit: 44, ors: 0.58, hygiene_kit: 9, shelter_kit: 85 },
+    priceList: { water_bottle: 1.44, medicine_kit: 132, ors: 1.74, hygiene_kit: 27, shelter_kit: 255 },
     deliveryHours: 30,
     bidsOnlyOnRush: false,
     hasLicenseEvidence: true,
@@ -81,7 +93,7 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     riskFlags: ["NOT_IN_REGISTRY", "NO_LICENSE_EVIDENCE", "NEW_COUNTERPARTY"],
     claims: ["Certified pharmaceutical distributor", "Fastest delivery in the south"],
     isDemo: true,
-    priceList: { water_bottle: 0.3, medicine_kit: 21, ors: 0.32 },
+    priceList: { water_bottle: 0.9, medicine_kit: 63, ors: 0.96 },
     deliveryHours: 10,
     bidsOnlyOnRush: true,
     hasLicenseEvidence: false,
@@ -98,12 +110,47 @@ export const DEMO_SUPPLIERS: DemoSupplier[] = [
     riskFlags: [],
     claims: ["Same-day dispatch in central Tunisia"],
     isDemo: true,
-    priceList: { water_bottle: 0.45, medicine_kit: 43, ors: 0.56, food_parcel: 24 },
+    priceList: { water_bottle: 1.35, medicine_kit: 129, ors: 1.68, food_parcel: 72 },
     deliveryHours: 24,
     bidsOnlyOnRush: false,
     hasLicenseEvidence: true,
     invoicePrefix: "KQS",
     fixedInvoiceId: "INV-KQS-2026-0042",
+  },
+  /* ---- ACME Tunisia (second use case: company procurement) ---- */
+  {
+    supplierId: "SUP-CARTHAGE-IT",
+    name: "Carthage IT Distribution (demo)",
+    region: "Tunis",
+    serviceRegions: ["Tunis", "Sousse", "Sfax"],
+    categories: ["ELECTRONICS", "OFFICE"],
+    verified: true,
+    verificationSource: "Simulated vendor registry · entry VND-0418",
+    riskFlags: [],
+    claims: ["Authorized business laptop reseller", "Next-day delivery in Greater Tunis"],
+    isDemo: true,
+    priceList: { laptop: 2460, monitor: 495, office_supplies: 12.6 },
+    deliveryHours: 48,
+    bidsOnlyOnRush: false,
+    hasLicenseEvidence: true,
+    invoicePrefix: "CIT",
+  },
+  {
+    supplierId: "SUP-SOUSSE-OFFICE",
+    name: "Sousse Office Pro (demo)",
+    region: "Sousse",
+    serviceRegions: ["Sousse", "Tunis"],
+    categories: ["ELECTRONICS", "OFFICE"],
+    verified: true,
+    verificationSource: "Simulated vendor registry · entry VND-0377",
+    riskFlags: [],
+    claims: ["Office furniture and supplies since 2009"],
+    isDemo: true,
+    priceList: { laptop: 2580, monitor: 477, office_chair: 354, office_supplies: 11.4 },
+    deliveryHours: 72,
+    bidsOnlyOnRush: false,
+    hasLicenseEvidence: true,
+    invoicePrefix: "SOP",
   },
 ];
 
@@ -113,9 +160,9 @@ export const HISTORICAL_OFFERS = [
     offerId: "off_demo_history_kqs_0042",
     supplierId: "SUP-KAIROUAN",
     missionId: "demo-history-2026-09",
-    items: [{ category: "WATER" as const, name: "Bottled drinking water 1.5L", quantity: 2000, unitPrice: 0.45, lineTotal: 900 }],
-    totalPrice: 900,
-    currency: "USD" as const,
+    items: [{ category: "WATER" as const, name: "Bottled drinking water 1.5L", quantity: 2000, unitPrice: 1.35, lineTotal: 2700 }],
+    totalPrice: 2700,
+    currency: "TND" as const,
     deliveryTimeHours: 24,
     invoiceId: "INV-KQS-2026-0042",
     evidence: [],
@@ -124,16 +171,20 @@ export const HISTORICAL_OFFERS = [
   },
 ];
 
-/** Demo market reference unit prices (USD) used by the price-anomaly rule. */
+/** Demo market reference unit prices (TND) used by the price-anomaly rule. */
 export const REFERENCE_PRICES: Record<ItemKey, number> = {
-  water_bottle: 0.48,
-  medicine_kit: 45,
-  ors: 0.58,
-  hygiene_kit: 9.5,
-  food_parcel: 25,
-  shelter_kit: 90,
-  electronics: 150,
-  other: 10,
+  water_bottle: 1.44,
+  medicine_kit: 135,
+  ors: 1.74,
+  hygiene_kit: 28.5,
+  food_parcel: 75,
+  shelter_kit: 270,
+  electronics: 450,
+  laptop: 2550,
+  monitor: 510,
+  office_chair: 375,
+  office_supplies: 12,
+  other: 30,
 };
 
 const CATEGORY_DEFAULT_KEY: Record<ItemCategory, ItemKey> = {
@@ -143,6 +194,7 @@ const CATEGORY_DEFAULT_KEY: Record<ItemCategory, ItemKey> = {
   HYGIENE: "hygiene_kit",
   SHELTER: "shelter_kit",
   ELECTRONICS: "electronics",
+  OFFICE: "office_supplies",
   OTHER: "other",
 };
 
@@ -152,6 +204,9 @@ export function itemKey(item: Pick<RequestedItem, "category" | "name">): ItemKey
   if (item.category === "MEDICINE" && /kit|medic/.test(n)) return "medicine_kit";
   if (/water/.test(n)) return "water_bottle";
   if (/hygiene/.test(n)) return "hygiene_kit";
+  if (/laptop|notebook/.test(n)) return "laptop";
+  if (/monitor|screen|display/.test(n)) return "monitor";
+  if (/chair/.test(n)) return "office_chair";
   return CATEGORY_DEFAULT_KEY[item.category];
 }
 
@@ -174,10 +229,11 @@ export interface ScenarioDefinition extends ScenarioInfo {
 export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "A_APPROVED",
-    request: "500 people in Gabès need drinking water and essential medicine after a water network failure. Budget: $5,000. Delivery within 48 hours to the civil-protection warehouse.",
+    organizationId: "NGO_RELIEF",
+    request: "500 people in Gabès need drinking water and essential medicine after a water network failure. Budget: 15,000 TND. Delivery within 48 hours to the civil-protection warehouse.",
     letter: "A",
     title: "Approved mission",
-    pitch: "500 people in Gabès need water and essential medicine. Budget $5,000.",
+    pitch: "500 people in Gabès need water and essential medicine. Budget 15,000 TND.",
     expected: "Verified supplier, valid offer → 3ASES APPROVED → KANAWITA pays on testnet → proofs verifiable.",
     followUp: null,
     draft: () => ({
@@ -185,8 +241,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
       location: "Gabès",
       beneficiaries: 500,
       requestedItems: GABES_ITEMS,
-      maximumBudget: 5000,
-      currency: "USD",
+      maximumBudget: 15000,
+      currency: "TND",
       deadline: hoursFromNow(48),
       urgency: "HIGH",
       constraints: ["Deliver to the regional civil-protection warehouse"],
@@ -194,19 +250,20 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "B_BUDGET_BLOCK",
-    request: "500 people in Gabès need drinking water and essential medicine. We only have $100 available. Delivery within 48 hours.",
+    organizationId: "NGO_RELIEF",
+    request: "500 people in Gabès need drinking water and essential medicine. We only have 300 TND available. Delivery within 48 hours.",
     letter: "B",
     title: "Budget block",
-    pitch: "Same Gabès mission, but only $100 available.",
+    pitch: "Same Gabès mission, but only 300 TND available.",
     expected: "Every offer exceeds the budget → 3ASES BLOCKED → KANAWITA never runs → block proof on Hedera.",
     followUp: null,
     draft: () => ({
-      description: "Emergency water and essential medicine for 500 people in Gabès with a $100 budget.",
+      description: "Emergency water and essential medicine for 500 people in Gabès with a 300 TND budget.",
       location: "Gabès",
       beneficiaries: 500,
       requestedItems: GABES_ITEMS,
-      maximumBudget: 100,
-      currency: "USD",
+      maximumBudget: 300,
+      currency: "TND",
       deadline: hoursFromNow(48),
       urgency: "HIGH",
       constraints: [],
@@ -214,7 +271,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "C_DUPLICATE_PAYMENT",
-    request: "500 people in Gabès need drinking water and essential medicine. Budget: $5,000. Delivery within 48 hours.",
+    organizationId: "NGO_RELIEF",
+    request: "500 people in Gabès need drinking water and essential medicine. Budget: 15,000 TND. Delivery within 48 hours.",
     letter: "C",
     title: "Duplicate payment attack",
     pitch: "Pay once, then replay exactly the same payment.",
@@ -225,8 +283,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
       location: "Gabès",
       beneficiaries: 500,
       requestedItems: GABES_ITEMS,
-      maximumBudget: 5000,
-      currency: "USD",
+      maximumBudget: 15000,
+      currency: "TND",
       deadline: hoursFromNow(48),
       urgency: "HIGH",
       constraints: [],
@@ -234,7 +292,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "D_UNVERIFIED_SUPPLIER",
-    request: "Rush: 500 people in Gabès need drinking water and essential medicine within 12 hours. Budget: $5,000.",
+    organizationId: "NGO_RELIEF",
+    request: "Rush: 500 people in Gabès need drinking water and essential medicine within 12 hours. Budget: 15,000 TND.",
     letter: "D",
     title: "Unverified supplier",
     pitch: "Rush order: delivery within 12 hours. Only a cheap, unknown broker can make it.",
@@ -245,8 +304,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
       location: "Gabès",
       beneficiaries: 500,
       requestedItems: GABES_ITEMS,
-      maximumBudget: 5000,
-      currency: "USD",
+      maximumBudget: 15000,
+      currency: "TND",
       deadline: hoursFromNow(12),
       urgency: "CRITICAL",
       constraints: ["Delivery within 12 hours"],
@@ -254,10 +313,11 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "E_HUMAN_REVIEW",
-    request: "2,000 displaced people in Médenine need drinking water and essential medicine. Budget: $20,000. Delivery within 72 hours.",
+    organizationId: "NGO_RELIEF",
+    request: "2,000 displaced people in Médenine need drinking water and essential medicine. Budget: 60,000 TND. Delivery within 72 hours.",
     letter: "E",
     title: "High-risk human review",
-    pitch: "2,000 displaced people in Médenine. Budget $20,000 — above the autonomous limit.",
+    pitch: "2,000 displaced people in Médenine. Budget 60,000 TND — above the autonomous limit.",
     expected: "3ASES → HUMAN_REVIEW_REQUIRED. Payment stays stopped until an operator approves (or rejects).",
     followUp: "Payment is on hold: approve or reject in the approval card at the end of the conversation (demo PIN in the README).",
     draft: () => ({
@@ -269,8 +329,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
         { category: "MEDICINE", name: "Essential medicine kit", quantity: 200, unit: "kit" },
         { category: "MEDICINE", name: "Oral rehydration salts (ORS)", quantity: 4000, unit: "sachet" },
       ],
-      maximumBudget: 20000,
-      currency: "USD",
+      maximumBudget: 60000,
+      currency: "TND",
       deadline: hoursFromNow(72),
       urgency: "HIGH",
       constraints: [],
@@ -278,7 +338,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "F_TAMPERING",
-    request: "500 people in Gabès need drinking water and essential medicine. Budget: $5,000. Delivery within 48 hours. (audit integrity drill)",
+    organizationId: "NGO_RELIEF",
+    request: "500 people in Gabès need drinking water and essential medicine. Budget: 15,000 TND. Delivery within 48 hours. (audit integrity drill)",
     letter: "F",
     title: "Tampering detection",
     pitch: "Create real evidence and Hedera proofs, then edit the local history.",
@@ -289,8 +350,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
       location: "Gabès",
       beneficiaries: 500,
       requestedItems: GABES_ITEMS,
-      maximumBudget: 5000,
-      currency: "USD",
+      maximumBudget: 15000,
+      currency: "TND",
       deadline: hoursFromNow(48),
       urgency: "HIGH",
       constraints: [],
@@ -298,7 +359,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
   },
   {
     id: "G_RECYCLED_INVOICE",
-    request: "400 people in Kairouan need drinking water and essential medicine after flash floods. Budget: $4,500. Delivery within 48 hours.",
+    organizationId: "NGO_RELIEF",
+    request: "400 people in Kairouan need drinking water and essential medicine after flash floods. Budget: 13,500 TND. Delivery within 48 hours.",
     letter: "G",
     title: "Recycled invoice",
     pitch: "A verified, cheap supplier in Kairouan — but its invoice number was already used.",
@@ -313,10 +375,58 @@ export const SCENARIOS: ScenarioDefinition[] = [
         { category: "MEDICINE", name: "Essential medicine kit", quantity: 40, unit: "kit" },
         { category: "MEDICINE", name: "Oral rehydration salts (ORS)", quantity: 800, unit: "sachet" },
       ],
-      maximumBudget: 4500,
-      currency: "USD",
+      maximumBudget: 13500,
+      currency: "TND",
       deadline: hoursFromNow(48),
       urgency: "HIGH",
+      constraints: [],
+    }),
+  },
+  /* ---- ACME Tunisia: the same agents and proofs, a different organization and policy ---- */
+  {
+    id: "H_ACME_SUPPLIES",
+    organizationId: "ACME_PROCUREMENT",
+    request: "ACME Tunisia: restock printer paper and stationery for the 120 employees of the Tunis office. 300 packs. Budget: 4,500 TND. Delivery within 5 days.",
+    letter: "H",
+    title: "ACME · office supplies",
+    pitch: "A company restocks its Tunis office. Small amount, inside ACME's 6,000 TND autonomous limit.",
+    expected: "Same agents, ACME policy 1.1.0 → verified vendor → 3ASES APPROVED → paid autonomously → proofs on the same Hedera topic.",
+    followUp: null,
+    draft: () => ({
+      organizationId: "ACME_PROCUREMENT",
+      description: "Printer paper and stationery restock for ACME Tunisia's Tunis office (120 employees).",
+      location: "Tunis",
+      beneficiaries: 120,
+      requestedItems: [{ category: "OFFICE", name: "Printer paper & stationery pack", quantity: 300, unit: "pack" }],
+      maximumBudget: 4500,
+      currency: "TND",
+      deadline: hoursFromNow(120),
+      urgency: "MEDIUM",
+      constraints: ["Deliver to the Tunis office reception"],
+    }),
+  },
+  {
+    id: "I_ACME_LAPTOPS",
+    organizationId: "ACME_PROCUREMENT",
+    request: "ACME Tunisia: 12 laptops and 12 monitors for the new engineering team in Tunis. Budget: 45,000 TND. Delivery within 7 days.",
+    letter: "I",
+    title: "ACME · laptops above the limit",
+    pitch: "12 laptops + 12 monitors: far above ACME's 6,000 TND autonomous limit.",
+    expected: "3ASES → HUMAN_REVIEW_REQUIRED → the payment is locked in the Hedera vault (2-of-2) until the approver co-signs.",
+    followUp: "The payment is locked on Hedera: approve or reject in the approval card (demo PIN in the README).",
+    draft: () => ({
+      organizationId: "ACME_PROCUREMENT",
+      description: "Laptops and monitors for ACME Tunisia's new engineering team (12 employees).",
+      location: "Tunis",
+      beneficiaries: 12,
+      requestedItems: [
+        { category: "ELECTRONICS", name: "Business laptop 14-inch", quantity: 12, unit: "unit" },
+        { category: "ELECTRONICS", name: "24-inch monitor", quantity: 12, unit: "unit" },
+      ],
+      maximumBudget: 45000,
+      currency: "TND",
+      deadline: hoursFromNow(168),
+      urgency: "MEDIUM",
       constraints: [],
     }),
   },

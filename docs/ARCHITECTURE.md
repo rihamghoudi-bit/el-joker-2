@@ -89,7 +89,7 @@ previousEventHash = eventHash of the previous event (genesis = 64 zeros)
 HCS message (one chunk, < 1 KB, no personal data, no prices, no documents):
 
 ```json
-{"e":"evt_…","eh":"<eventHash>","h":"<evidenceHash>","m":"msn_…","p":"eljoker","ph":"<previousEventHash>","pv":"2.0.0+…","s":3,"t":"GUARDIAN_APPROVED","ts":"…","v":"1"}
+{"e":"evt_…","eh":"<eventHash>","h":"<evidenceHash>","m":"msn_…","p":"eljoker","ph":"<previousEventHash>","pv":"2.1.0+…","s":3,"t":"GUARDIAN_APPROVED","ts":"…","v":"1"}
 ```
 
 Verification (`verifyMissionTrail`):
@@ -114,15 +114,54 @@ Before any transfer KANAWITA, independently of its caller:
 3. requires a valid human approval (authorized actor, bound to the same input hash + policy version) whenever the policy demanded review;
 4. requires the mission to be unpaid and the idempotency key unused;
 5. (live mode) waits for the `GUARDIAN_APPROVED` proof to be **anchored on Hedera** — no proof, no payment;
-6. computes the scaled demo settlement **from the authorized amount** (`offer USD / 1000 × DEMO_SETTLEMENT_HBAR_PER_1000_USD`, capped at `DEMO_SETTLEMENT_MAX_HBAR`; $4,150 → 1.0375 ℏ), inserts the payment row (DB unique constraints) → `PAYMENT_INITIATED` proof → single-shot `TransferTransaction` (never re-signed on failure; receipt re-queried by the same transaction id) → receipt `SUCCESS` → `PAID` + `PAYMENT_CONFIRMED` proof → async Mirror Node confirmation. Any failure → `PAYMENT_FAILED` proof; never marked paid.
+6. computes the scaled demo settlement **from the authorized amount** (`offer TND / 1000 × DEMO_SETTLEMENT_HBAR_PER_1000_TND`, capped at `DEMO_SETTLEMENT_MAX_HBAR`; 12,450 TND → 0.996 ℏ), inserts the payment row (DB unique constraints) → `PAYMENT_INITIATED` proof → single-shot `TransferTransaction` (never re-signed on failure; receipt re-queried by the same transaction id) → receipt `SUCCESS` → `PAID` + `PAYMENT_CONFIRMED` proof → async Mirror Node confirmation. Any failure → `PAYMENT_FAILED` proof; never marked paid.
 
 An in-process per-mission lock plus the DB constraints make concurrent double execution produce at most one payment (tested).
+
+Settlement asset: with `HEDERA_STABLECOIN_TOKEN_ID` set, payments are **HTS token transfers of the full offer amount** (EJTND, 3 decimals like millimes: 12,450 TND → 12,450 EJTND); otherwise the scaled HBAR amount above.
+
+## The vault: Hedera enforces the human approval
+
+Within the autonomous limit KANAWITA pays from the agents' own account. Above it, the money is in a **vault account whose key is a 2-of-2 threshold key** (`KeyList([agents, approver], 2)`), created by `hedera:setup -- --vault`.
+
+```
+3ASES → HUMAN_REVIEW_REQUIRED
+  KANAWITA.lockInVault: payment row SCHEDULED (DB slot reserved, not "live")
+    ScheduleCreateTransaction(inner = transfer vault → payee, admin key = agents, payer = agents)
+    → signed by the agents' key = 1 of 2 · PAYMENT_SCHEDULED proof · "LOCKED ON HEDERA"
+operator approves (authorized actor + PIN, bound to the input hash)
+  3ASES re-runs → APPROVED → KANAWITA re-checks everything
+    PAYMENT_INITIATED proof → ScheduleSignTransaction signed with the approver key = 2 of 2
+    → Hedera executes the transfer in the same consensus round → receipt of the scheduled tx id SUCCESS
+    → PAID · PAYMENT_CONFIRMED proof (signatures "2 of 2")
+operator rejects
+  ScheduleDeleteTransaction (admin key) → payment CANCELLED · PAYMENT_CANCELLED proof
+```
+
+Design points:
+- A SCHEDULED payment is *reserved*, not live: it holds the DB unique slot (no second payment can be created) but does not count as "already paid" for 3ASES, so locking it does not change the facts the approval is bound to.
+- If locking fails at review time the reservation is removed (nothing reached the ledger) and the lock is retried at approval time — the transfer still needs both signatures.
+- A Hedera schedule expires (≈30 min by default). If the approver's signature finds it gone, KANAWITA creates a new schedule on the same payment row and co-signs that one.
+- Demo honesty: the approver key is held by the server and used only after operator + PIN. In production it lives in the approver's own wallet; the ledger-side guarantee is the same.
+
+## Organizations and policies
+
+`PolicyRegistry` loads one versioned policy file per organization (`policy.json` for the relief NGO, `policy.acme.json` for ACME Tunisia). A mission carries its `organizationId`; 3ASES, KANAWITA, NASNES' price tolerance and the policy version written into every proof (`pv`) all come from the mission's organization. Same agents, same topic, same proof format: the policy is the only thing that changes.
+
+## Public verifier (`/verify`)
+
+`GET /api/public/missions/:id/bundle` returns what the server claims: every event header with its **raw evidence text**, the payments and where their proofs live. The page then, entirely in the visitor's browser:
+1. reads the topic's messages for the mission **directly from the public Mirror Node** (no EL JOKER server in between);
+2. recomputes `SHA-256(canonical(evidence))` and the event hash with Web Crypto, checks every chain link, and compares them with the consensus records (`verifyBundle` in `packages/shared`, the same code the API tests run with `node:crypto`);
+3. checks completeness (a proof on the ledger missing from the bundle ⇒ deleted history) and that the ledger's own records are numbered 0..n-1 and linked;
+4. checks payments on the Mirror Node: transfer result, and for vault payments the schedule's `executed_timestamp` and signature count.
+In SIMULATED mode the server hands over its stand-in ledger copies and the page says the check is not independent.
 
 ## Human approvals
 
 High-risk decisions stop in `HUMAN_REVIEW`. An approval needs an authorized operator (`DEMO_OPERATORS`) **and** the operator PIN (`DEMO_OPERATOR_PIN`; documented demo default `0619` only when `DEMO_MODE=true`), compared in constant time with a 60 s lockout after 5 failures. The approval is stored once per mission and bound to the Guardian input hash + policy version it was given for; 3ASES re-runs with it, and an unauthorized, stale or rejected approval can never turn a review into a payment. This is a demo operator mode, not a production identity system.
 
-## 3ASES policy (v2.0.0)
+## 3ASES policy (NGO v2.1.0; ACME v1.1.0 uses the same rules with its own limits)
 
 | Check | Outcome on failure |
 |---|---|
@@ -131,13 +170,13 @@ High-risk decisions stop in `HUMAN_REVIEW`. An approval needs an authorized oper
 | Verified supplier (in registry + verified) | BLOCK |
 | Allowed region (policy list) and supplier serves it | BLOCK |
 | Allowed spending category (WATER, MEDICINE, FOOD, HYGIENE, SHELTER) | BLOCK |
-| Currency match (USD) | BLOCK |
+| Currency match (TND) | BLOCK |
 | Within mission budget | BLOCK |
 | Price anomaly vs reference: > +60% | BLOCK; > +25% or < −40% → REVIEW |
 | Duplicate invoice / missing invoice | BLOCK |
 | Duplicate payment / idempotency key used | BLOCK |
-| Transaction > max ($25,000) | BLOCK |
-| Transaction > autonomous limit ($5,000) | REVIEW |
+| Transaction > max (75,000 TND; ACME 150,000 TND) | BLOCK |
+| Transaction > autonomous limit (15,000 TND; ACME 6,000 TND) | REVIEW |
 | Risk level ≥ human threshold (HIGH) | REVIEW |
 
 Risk score: +40 above autonomous limit, +20 price anomaly, +15 per supplier risk flag, +10 offer ≥ 90% of budget, +10 critical urgency. Bands: <20 LOW, <40 MEDIUM, <70 HIGH, else CRITICAL; any BLOCK ⇒ CRITICAL.
@@ -145,7 +184,7 @@ Decision: any BLOCK ⇒ `BLOCKED`; else any REVIEW ⇒ `HUMAN_REVIEW_REQUIRED` (
 
 ## Why no smart contract
 
-HCS (ordered, timestamped, tamper-evident proofs) + a native HBAR `TransferTransaction` + Mirror Node verification already cover proof and settlement for this MVP. The authorization logic must remain readable, deterministic, versioned off-chain code that judges and auditors can inspect and unit-test; moving it into a contract would add deployment risk and gas/fee complexity without solving a stated requirement. A contract (or Hedera Scheduled Transactions for multi-signature release) becomes justified for real escrow or multi-party approval — listed as future work.
+HCS (ordered, timestamped, tamper-evident proofs), native transfers (HBAR or HTS), **scheduled transactions with a threshold key** (the human co-signature enforced by the ledger) and Mirror Node verification cover proof, settlement and multi-party release with native Hedera services. The authorization logic must remain readable, deterministic, versioned off-chain code that judges and auditors can inspect and unit-test; moving it into a contract would add deployment risk and fee complexity without solving a stated requirement.
 
 ## AI boundaries
 

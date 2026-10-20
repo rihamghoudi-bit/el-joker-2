@@ -1,44 +1,16 @@
-import type { AgentName, AnchorInfo, AuditEvent, AuditEventType, EventVerification, MissingLocalEvent, TrailVerification } from "@eljoker/shared";
+import { type AgentName, type AnchorInfo, type AuditEvent, type AuditEventType, type EventHeader, type EventVerification, GENESIS_HASH, LEDGER_PROTOCOL, type LedgerRecord, type MissingLocalEvent, parseLedgerRecord, type TrailVerification } from "@eljoker/shared";
 import type { Store } from "../db/store";
 import type { LedgerGateway, LedgerMessage } from "../hedera/gateway";
 import { canonicalize, hashCanonical, newId, nowIso, sha256Hex, sleep } from "../lib/canonical";
 import { logger } from "../logger";
 
 export const AUDIT_SCHEMA_VERSION = "eljoker.audit/1";
-export const GENESIS_HASH = "0".repeat(64);
-const LEDGER_PROTOCOL = "eljoker";
-
-export interface EventHeader {
-  schemaVersion: string;
-  eventId: string;
-  missionId: string;
-  sequence: number;
-  eventType: AuditEventType;
-  agent: AgentName;
-  policyVersion: string;
-  timestamp: string;
-  evidenceHash: string;
-  previousEventHash: string;
-}
+export { GENESIS_HASH };
+export type { EventHeader, LedgerRecord };
 
 /** eventHash commits to the header, which commits to the evidence hash and the previous event: a hash chain. */
 export function computeEventHash(h: EventHeader): string {
   return hashCanonical(h);
-}
-
-/** Minimal on-chain record. No beneficiary data, no documents, no prices — only identifiers and hashes. */
-export interface LedgerRecord {
-  p: string;
-  v: string;
-  m: string;
-  e: string;
-  t: AuditEventType;
-  s: number;
-  h: string;
-  ph: string;
-  eh: string;
-  pv: string;
-  ts: string;
 }
 
 export function buildLedgerMessage(e: Pick<AuditEvent, "missionId" | "eventId" | "eventType" | "sequence" | "evidenceHash" | "previousEventHash" | "eventHash" | "policyVersion" | "timestamp">): string {
@@ -58,15 +30,7 @@ export function buildLedgerMessage(e: Pick<AuditEvent, "missionId" | "eventId" |
   return canonicalize(rec);
 }
 
-export function parseLedgerMessage(raw: string): LedgerRecord | null {
-  try {
-    const obj = JSON.parse(raw) as Partial<LedgerRecord>;
-    if (obj.p !== LEDGER_PROTOCOL || typeof obj.h !== "string" || typeof obj.eh !== "string" || typeof obj.e !== "string") return null;
-    return obj as LedgerRecord;
-  } catch {
-    return null;
-  }
-}
+export const parseLedgerMessage = parseLedgerRecord;
 
 export interface RecordEventInput {
   missionId: string;
@@ -89,7 +53,8 @@ export class ProofService {
   constructor(
     private readonly store: Store,
     private readonly ledger: LedgerGateway,
-    private readonly policyVersion: () => string,
+    /** Policy version in force for a mission (each organization has its own policy). */
+    private readonly policyVersion: (missionId: string) => string,
     private readonly opts: { retryDelayMs?: number; mirrorAttempts?: number; mirrorDelayMs?: number } = {},
   ) {}
 
@@ -110,7 +75,7 @@ export class ProofService {
         sequence: existing.length,
         eventType: input.eventType,
         agent: input.agent,
-        policyVersion: this.policyVersion(),
+        policyVersion: this.policyVersion(input.missionId),
         timestamp: nowIso(),
         evidenceHash: sha256Hex(payloadJson),
         previousEventHash: prev ? prev.eventHash : GENESIS_HASH,

@@ -4,6 +4,7 @@
  * and checks the recommender's stated facts for unsupported claims.
  */
 import type { Mission, Offer, Recommendation, Supplier, VerificationCheck, VerificationResult, VerificationStatus } from "@eljoker/shared";
+import { money } from "@eljoker/shared";
 import { newId, nowIso, round2 } from "../lib/canonical";
 import { itemKey, REFERENCE_PRICES } from "../seed/demoData";
 import { normalizeRegion } from "./guardian/policy";
@@ -51,7 +52,7 @@ export function verifyRecommendation(ctx: NasnesContext): VerificationResult {
     const lineErrors = offer.items.filter((i) => Math.abs(round2(i.quantity * i.unitPrice) - i.lineTotal) > 0.01);
     const sum = round2(offer.items.reduce((a, i) => a + i.lineTotal, 0));
     const arithmeticOk = lineErrors.length === 0 && Math.abs(sum - offer.totalPrice) <= 0.01;
-    add("ARITHMETIC", "Price arithmetic consistent", arithmeticOk, "REJECT", arithmeticOk ? `Line totals sum to $${offer.totalPrice.toLocaleString("en-US")}` : `Lines sum to $${sum} but offer states $${offer.totalPrice}`);
+    add("ARITHMETIC", "Price arithmetic consistent", arithmeticOk, "REJECT", arithmeticOk ? `Line totals sum to ${money(offer.totalPrice)}` : `Lines sum to ${money(sum)} but offer states ${money(offer.totalPrice)}`);
 
     // 6. Evidence exists
     const hasQuote = offer.evidence.some((d) => d.type === "QUOTE");
@@ -68,7 +69,7 @@ export function verifyRecommendation(ctx: NasnesContext): VerificationResult {
     const f = recommendation.statedFacts;
     const claimProblems: string[] = [];
     if (f.supplierName !== supplier.name) claimProblems.push(`supplier "${f.supplierName}" ≠ "${supplier.name}"`);
-    if (Math.abs(f.totalPrice - offer.totalPrice) > 1) claimProblems.push(`price $${f.totalPrice} ≠ $${offer.totalPrice}`);
+    if (Math.abs(f.totalPrice - offer.totalPrice) > 1) claimProblems.push(`price ${money(f.totalPrice)} ≠ ${money(offer.totalPrice)}`);
     if (Math.abs(f.deliveryTimeHours - offer.deliveryTimeHours) > 0.5) claimProblems.push(`delivery ${f.deliveryTimeHours}h ≠ ${offer.deliveryTimeHours}h`);
     if (f.claimsSupplierVerified && !supplier.verified) claimProblems.push("claims supplier is verified, registry says it is not");
     add("AI_CLAIMS", "Recommendation claims supported", claimProblems.length === 0, "REVIEW", claimProblems.length === 0 ? "Stated facts match the records" : `Unsupported: ${claimProblems.join("; ")}`);
@@ -77,7 +78,7 @@ export function verifyRecommendation(ctx: NasnesContext): VerificationResult {
     const lows = offer.items
       .map((i) => ({ i, ref: REFERENCE_PRICES[itemKey(i)] }))
       .filter(({ i, ref }) => ref && ((ref - i.unitPrice) / ref) * 100 > ctx.suspiciousBelowPct)
-      .map(({ i, ref }) => `${i.name} $${i.unitPrice} vs ref $${ref}`);
+      .map(({ i, ref }) => `${i.name} ${money(i.unitPrice)} vs ref ${money(ref)}`);
     add("SUSPICIOUS_PRICING", "Plausible pricing", lows.length === 0, "REVIEW", lows.length === 0 ? "Unit prices plausible vs reference" : `Suspiciously low: ${lows.join("; ")}`);
     const fits = offer.deliveryTimeHours <= hoursUntil(mission.deadline);
     add("DEADLINE", "Delivery meets deadline", fits, "REVIEW", fits ? `${offer.deliveryTimeHours}h fits the deadline` : `${offer.deliveryTimeHours}h misses the deadline`);

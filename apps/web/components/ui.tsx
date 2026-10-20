@@ -23,7 +23,7 @@ export function toneFor(label: string): Tone {
   if (/REVIEW|HOLD|PENDING|NEEDS|HIGH|SIMULATED|FALLBACK|MEDIUM/.test(l)) return "amber";
   if (/PROOF VERIFIED|PAID|APPROVED|VERIFIED|VALID|LOW|ANCHORED|CONFIRMED|SUCCESS/.test(l)) return "green";
   if (/REAL AI|AI ANALYZING|RECOMMENDATION/.test(l)) return "violet";
-  if (/NO LLM|DETERMINISTIC|EVALUATING/.test(l)) return "teal";
+  if (/NO LLM|DETERMINISTIC|EVALUATING|LOCKED|CO-SIGN|SIGNATURES|SCHEDULE/.test(l)) return "teal";
   if (/DEMO/.test(l)) return "gold";
   if (/PAYING|VERIFYING|RESEARCHING|CREATED|CHECKING/.test(l)) return "blue";
   return "gray";

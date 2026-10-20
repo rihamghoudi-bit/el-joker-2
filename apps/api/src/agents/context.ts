@@ -1,4 +1,4 @@
-import type { AgentName, FeedMessage, Mission, Offer, Supplier, VerificationResult } from "@eljoker/shared";
+import { type AgentName, type FeedMessage, isLivePayment, type Mission, type Offer, type Supplier, type VerificationResult } from "@eljoker/shared";
 import type { Store } from "../db/store";
 import { hashCanonical, newId, nowIso } from "../lib/canonical";
 import { itemKey } from "../seed/demoData";
@@ -36,7 +36,10 @@ export function buildGuardianSnapshot(store: Store, missionId: string, payeeAcco
   const supplier = offer ? store.getSupplier(offer.supplierId) : null;
   const verification = store.latestVerification(missionId);
   const idempotencyKey = offer ? paymentIdempotencyKey(missionId, offer, payeeAccountId) : null;
-  const livePayments = store.listPayments(missionId).filter((p) => p.status !== "FAILED");
+  // A payment locked in the vault (SCHEDULED) is reserved, not live: the facts the human reviews must not change
+  // because of it, or the approval (bound to their hash) would never match.
+  const livePayments = store.listPayments(missionId).filter(isLivePayment);
+  const keyPayment = idempotencyKey ? store.findPaymentByIdempotencyKey(idempotencyKey) : null;
   const invoiceAlreadyUsed = !!offer?.invoiceId && (store.findOffersByInvoice(offer.invoiceId, missionId).length > 0 || (store.findLivePaymentByInvoice(offer.invoiceId)?.missionId ?? missionId) !== missionId);
 
   const input: GuardianInput = {
@@ -60,7 +63,7 @@ export function buildGuardianSnapshot(store: Store, missionId: string, payeeAcco
     ledger: {
       missionHasLivePayment: livePayments.length > 0,
       invoiceAlreadyUsed,
-      idempotencyKeyUsed: idempotencyKey ? store.findPaymentByIdempotencyKey(idempotencyKey) !== null : false,
+      idempotencyKeyUsed: keyPayment !== null && keyPayment.status !== "SCHEDULED",
     },
   };
   return { mission, offer, supplier, verification, input, idempotencyKey };

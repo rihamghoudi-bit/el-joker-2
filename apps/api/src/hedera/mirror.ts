@@ -1,9 +1,10 @@
 import { logger } from "../logger";
-import type { LedgerMessage, LedgerTransaction } from "./gateway";
+import type { LedgerMessage, LedgerTransaction, ScheduleInfo } from "./gateway";
 
 /** "0.0.123@1700000000.123456789" -> "0.0.123-1700000000-123456789" (Mirror Node / HashScan path format). */
 export function toMirrorTxId(txId: string): string {
-  const [account, ts] = txId.split("@");
+  // Scheduled transactions share their creator's id plus a "?scheduled" flag (the Mirror Node takes it as a query).
+  const [account, ts] = txId.replace(/\?scheduled$/, "").split("@");
   if (!account || !ts) return txId;
   return `${account}-${ts.replace(".", "-")}`;
 }
@@ -65,12 +66,21 @@ export class MirrorNodeClient {
   }
 
   async getTransaction(transactionId: string): Promise<LedgerTransaction | null> {
-    const body = (await this.getJson(`/api/v1/transactions/${toMirrorTxId(transactionId)}`)) as
+    const scheduled = transactionId.endsWith("?scheduled") ? "?scheduled=true" : "";
+    const body = (await this.getJson(`/api/v1/transactions/${toMirrorTxId(transactionId)}${scheduled}`)) as
       | { transactions?: { result?: string; consensus_timestamp?: string; transaction_id?: string }[] }
       | null;
     const tx = body?.transactions?.[0];
     if (!tx) return null;
     return { transactionId, result: tx.result ?? "UNKNOWN", consensusTimestamp: tx.consensus_timestamp ?? null };
+  }
+
+  async getSchedule(scheduleId: string): Promise<ScheduleInfo | null> {
+    const body = (await this.getJson(`/api/v1/schedules/${scheduleId}`)) as
+      | { schedule_id?: string; executed_timestamp?: string | null; deleted?: boolean; signatures?: unknown[] }
+      | null;
+    if (!body?.schedule_id) return null;
+    return { scheduleId, executed: !!body.executed_timestamp, deleted: !!body.deleted, signatures: Array.isArray(body.signatures) ? body.signatures.length : 0, executedTimestamp: body.executed_timestamp ?? null };
   }
 
   async getAccountKey(accountId: string): Promise<{ type: string; key: string } | null> {

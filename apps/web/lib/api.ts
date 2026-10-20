@@ -1,4 +1,4 @@
-import type { ApprovalRequest, MissionState, MissionSummary, PublicConfig, ScenarioInfo, TrailVerification } from "@eljoker/shared";
+import type { ApprovalRequest, MissionState, MissionSummary, ProofBundle, PublicConfig, ScenarioInfo, TrailVerification } from "@eljoker/shared";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public code?: string, public details?: unknown) {
@@ -41,4 +41,6 @@ export const api = {
   verify: (id: string) => call<TrailVerification>(`/api/missions/${id}/verify`, { method: "POST" }),
   tamper: (id: string, mode: TamperMode) => call<TamperResult>(`/api/missions/${id}/tamper`, { method: "POST", body: JSON.stringify({ mode }) }),
   reset: () => call<{ ok: boolean }>("/api/demo/reset", { method: "POST" }),
+  /** What the server claims about a mission. The public verifier checks it instead of trusting it. */
+  bundle: (id: string) => call<ProofBundle>(`/api/public/missions/${encodeURIComponent(id)}/bundle`),
 };

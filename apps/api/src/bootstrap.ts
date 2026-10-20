@@ -1,7 +1,7 @@
 import { type AiClient, AnthropicAiClient } from "./ai/aiClient";
 import { ProofService } from "./audit/proofService";
 import { type AppConfig, buildConfig } from "./config";
-import { loadPolicy } from "./agents/guardian/policy";
+import { type LoadedPolicy, PolicyRegistry } from "./agents/guardian/policy";
 import { Store } from "./db/store";
 import type { LedgerGateway } from "./hedera/gateway";
 import { HederaSdkGateway } from "./hedera/sdkGateway";
@@ -16,7 +16,10 @@ export interface AppServices {
   ledger: LedgerGateway;
   proofs: ProofService;
   missions: MissionService;
-  policy: ReturnType<typeof loadPolicy>;
+  /** Default organization's policy. */
+  policy: LoadedPolicy;
+  /** Every organization's policy. */
+  policies: PolicyRegistry;
   close(): void;
 }
 
@@ -32,7 +35,8 @@ export interface BootstrapOverrides {
 export async function bootstrap(o: BootstrapOverrides = {}): Promise<AppServices> {
   const config = o.config ?? buildConfig();
   const store = o.store ?? new Store(config.databasePath);
-  const policy = loadPolicy(config.policyOverrides);
+  const policies = new PolicyRegistry(config.policyOverrides);
+  const policy = policies.default;
   const ai = o.ai ?? new AnthropicAiClient(config.ai);
 
   let ledger: LedgerGateway;
@@ -44,6 +48,9 @@ export async function bootstrap(o: BootstrapOverrides = {}): Promise<AppServices
       topicId: config.hedera.topicId!,
       payeeAccountId: config.hedera.payeeAccountId,
       mirrorNodeUrl: config.hedera.mirrorNodeUrl,
+      vaultAccountId: config.hedera.vaultConfigured ? config.hedera.vaultAccountId : null,
+      approverPrivateKey: config.hedera.vaultConfigured ? config.hedera.approverPrivateKey : null,
+      stablecoin: config.hedera.stablecoin,
     });
     await gw.init().catch((e) => logger.warn("hedera.init_failed", { error: e }));
     ledger = gw;
@@ -51,15 +58,17 @@ export async function bootstrap(o: BootstrapOverrides = {}): Promise<AppServices
     ledger = new SimulatedGateway(store);
   }
 
-  const proofs = new ProofService(store, ledger, () => policy.effectiveVersion, o.proofOptions);
-  const missions = new MissionService({ config, store, ai, ledger, proofs, policy, stepDelayMs: o.stepDelayMs });
+  const proofs = new ProofService(store, ledger, (missionId) => policies.forMission(store.getMission(missionId)).effectiveVersion, o.proofOptions);
+  const missions = new MissionService({ config, store, ai, ledger, proofs, policies, stepDelayMs: o.stepDelayMs });
   missions.seedSuppliers();
 
   logger.info("app.bootstrapped", {
     ai: ai.available ? `REAL_AI ready (${ai.model})` : `FALLBACK only (${ai.unavailableReason})`,
     ledger: ledger.mode,
     topicId: ledger.topicId,
-    policy: policy.effectiveVersion,
+    policies: policies.list().map((p) => `${p.organizationId} ${p.effectiveVersion}`),
+    vault: ledger.vault.enabled ? ledger.vault.accountId : "disabled",
+    settlement: ledger.settlement.symbol,
     demoMode: config.demoMode,
   });
 
@@ -71,6 +80,7 @@ export async function bootstrap(o: BootstrapOverrides = {}): Promise<AppServices
     proofs,
     missions,
     policy,
+    policies,
     close() {
       if (ledger instanceof HederaSdkGateway) ledger.close();
       store.close();

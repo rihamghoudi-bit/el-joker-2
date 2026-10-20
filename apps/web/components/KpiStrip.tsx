@@ -1,6 +1,6 @@
-import type { MissionState } from "@eljoker/shared";
+import { isLivePayment, type MissionState, ORGANIZATIONS, organizationOf } from "@eljoker/shared";
 import type { ReactNode } from "react";
-import { cx, usd } from "@/lib/format";
+import { cx, money } from "@/lib/format";
 import { ExtLink } from "./ui";
 
 type Tone = "neutral" | "good" | "bad" | "warn" | "busy";
@@ -34,7 +34,9 @@ export function KpiStrip({ state, className }: { state: MissionState; className?
   const { mission, guardianDecision: g, verification } = state;
   const offer = state.offers.find((o) => o.offerId === state.recommendation?.recommendedOfferId) ?? null;
   const supplier = offer ? state.suppliers.find((s) => s.supplierId === offer.supplierId) : null;
-  const payment = state.payments.find((p) => p.status !== "FAILED") ?? state.payments[0] ?? null;
+  const payment = state.payments.find(isLivePayment) ?? state.payments.find((p) => p.status === "SCHEDULED") ?? state.payments[0] ?? null;
+  const org = ORGANIZATIONS[organizationOf(mission)];
+  const amount = payment ? (payment.settlementCurrency === "HBAR" ? `${payment.settlementAmount} ℏ` : `${payment.settlementAmount.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${payment.settlementCurrency}`) : "";
   const anchored = state.auditEvents.filter((e) => e.anchor.status === "ANCHORED" || e.anchor.status === "SIMULATED").length;
   const pending = state.auditEvents.filter((e) => e.anchor.status === "PENDING").length;
   const lv = state.lastVerification;
@@ -43,18 +45,18 @@ export function KpiStrip({ state, className }: { state: MissionState; className?
   const decision = g?.decision === "HUMAN_REVIEW_REQUIRED" ? "Human review" : g?.decision === "APPROVED" ? "Approved" : g?.decision === "BLOCKED" ? "Blocked" : "—";
   const decisionTone: Tone = g?.decision === "APPROVED" ? "good" : g?.decision === "BLOCKED" ? "bad" : g ? "warn" : state.currentAgent === "3ASES" ? "busy" : "neutral";
 
-  const payValue = payment?.status === "CONFIRMED" ? "Paid" : payment?.status === "FAILED" ? "Failed" : ["BLOCKED", "REJECTED"].includes(mission.status) ? "No payment" : mission.status === "HUMAN_REVIEW" ? "On hold" : mission.status === "PAYING" ? "Paying…" : "—";
-  const payTone: Tone = payment?.status === "CONFIRMED" ? "good" : payment?.status === "FAILED" || ["BLOCKED", "REJECTED"].includes(mission.status) ? "bad" : mission.status === "HUMAN_REVIEW" ? "warn" : mission.status === "PAYING" ? "busy" : "neutral";
+  const payValue = payment?.status === "CONFIRMED" ? "Paid" : payment?.status === "SCHEDULED" ? "Locked in vault" : payment?.status === "FAILED" ? "Failed" : ["BLOCKED", "REJECTED"].includes(mission.status) ? "No payment" : mission.status === "HUMAN_REVIEW" ? "On hold" : mission.status === "PAYING" ? "Paying…" : "—";
+  const payTone: Tone = payment?.status === "CONFIRMED" ? "good" : payment?.status === "SCHEDULED" ? "warn" : payment?.status === "FAILED" || ["BLOCKED", "REJECTED"].includes(mission.status) ? "bad" : mission.status === "HUMAN_REVIEW" ? "warn" : mission.status === "PAYING" ? "busy" : "neutral";
 
   const proofValue = lv?.overall === "TAMPERING_DETECTED" ? "Tampered" : lv?.overall === "VALID" ? "Verified" : `${anchored}/${state.auditEvents.length}`;
   const proofTone: Tone = lv?.overall === "TAMPERING_DETECTED" ? "bad" : lv?.overall === "VALID" ? "good" : pending ? "busy" : anchored ? "good" : "neutral";
 
   return (
     <div className={className ?? "grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6"}>
-      <Kpi label="Budget" value={usd(mission.maximumBudget)} sub={`${mission.beneficiaries.toLocaleString("en-US")} people · ${mission.location}`} />
+      <Kpi label="Budget" value={money(mission.maximumBudget)} sub={`${mission.beneficiaries.toLocaleString("en-US")} ${org.peopleLabel} · ${mission.location} · ${org.shortName}`} />
       <Kpi
         label="Best offer"
-        value={offer ? usd(offer.totalPrice) : state.currentAgent === "LEMHAF" ? "Searching…" : "—"}
+        value={offer ? money(offer.totalPrice) : state.currentAgent === "LEMHAF" ? "Searching…" : "—"}
         tone={offer ? (offer.totalPrice > mission.maximumBudget ? "bad" : "neutral") : state.currentAgent === "LEMHAF" ? "busy" : "neutral"}
         sub={supplier ? `${supplier.name.replace(" (demo)", "")} · ${supplier.verified ? "verified" : "UNVERIFIED"}` : undefined}
       />
@@ -65,7 +67,7 @@ export function KpiStrip({ state, className }: { state: MissionState; className?
         sub={verification ? `${verification.checks.filter((c) => c.passed).length}/${verification.checks.length} checks passed` : "Nasnes · independent"}
       />
       <Kpi label="Guardian" value={decision} tone={decisionTone} sub={g ? `Risk ${g.riskLevel} · no LLM` : "3ases · deterministic"} />
-      <Kpi label="Payment" value={payValue} tone={payTone} sub={payment ? <span className="flex flex-wrap gap-x-2">{payment.settlementAmount} ℏ {payment.mode === "SIMULATED" ? "· simulated" : "· testnet"} <ExtLink href={payment.hashscanUrl}>HashScan</ExtLink></span> : "Kanawita"} />
+      <Kpi label="Payment" value={payValue} tone={payTone} sub={payment ? <span className="flex flex-wrap gap-x-2">{amount} {payment.mode === "SIMULATED" ? "· simulated" : "· testnet"}{payment.source === "VAULT" ? " · vault 2-of-2" : ""} <ExtLink href={payment.hashscanUrl}>HashScan</ExtLink> <ExtLink href={payment.scheduleHashscanUrl}>schedule</ExtLink></span> : "Kanawita"} />
       <Kpi label="Hedera proof" value={proofValue} tone={proofTone} sub={lv ? (lv.overall === "VALID" ? "matches consensus record" : lv.summary.slice(0, 60)) : `events anchored${simulated ? " · simulated" : ""}`} />
     </div>
   );

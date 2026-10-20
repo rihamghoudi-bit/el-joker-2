@@ -1,11 +1,11 @@
 {
   "name": "EL JOKER emergency spending policy",
-  "version": "2.0.0",
-  "currency": "USD",
+  "version": "2.1.0",
+  "currency": "TND",
   "allowedRegions": ["Gabès", "Médenine", "Sfax", "Kébili", "Tataouine", "Gafsa", "Tozeur", "Kairouan", "Sidi Bouzid", "Kasserine", "Tunis"],
   "allowedCategories": ["WATER", "MEDICINE", "FOOD", "HYGIENE", "SHELTER"],
-  "autonomousLimitUsd": 5000,
-  "maxTransactionUsd": 25000,
+  "autonomousLimit": 15000,
+  "maxTransaction": 75000,
   "humanReviewRiskLevel": "HIGH",
   "priceAnomaly": {
     "reviewAbovePct": 25,

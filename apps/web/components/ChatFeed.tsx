@@ -2,7 +2,7 @@
 import type { FeedMessage, GuardianDecision, MissionState, Recommendation, VerificationResult } from "@eljoker/shared";
 import { type ReactNode, useEffect, useRef } from "react";
 import { AGENTS } from "@/lib/agents";
-import { cx, time, usd } from "@/lib/format";
+import { cx, time, money } from "@/lib/format";
 import { Avatar, Chip, ExtLink } from "./ui";
 
 function CheckList({ items }: { items: { label: string; ok: boolean | "review"; detail: string }[] }) {
@@ -71,8 +71,9 @@ function Details({ msg, state }: { msg: FeedMessage; state: MissionState }) {
     const p = state.payments.find((x) => x.paymentId === d.paymentId);
     return (
       <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px]">
-        {p?.hederaTransactionId && <span className="hash text-ink-300">tx {p.hederaTransactionId}</span>}
-        <ExtLink href={p?.hashscanUrl}>View on HashScan</ExtLink>
+        {p?.hederaTransactionId && p.status !== "SCHEDULED" && <span className="hash text-ink-300">tx {p.hederaTransactionId}</span>}
+        {p?.status === "CONFIRMED" && <ExtLink href={p.hashscanUrl}>View on HashScan</ExtLink>}
+        {d.scheduleId ? <ExtLink href={(d.scheduleHashscanUrl as string | null) ?? p?.scheduleHashscanUrl}>{`Schedule ${String(d.scheduleId)}`}</ExtLink> : null}
         {p?.mirrorVerified && <Chip label="Mirror Node confirmed" tone="green" />}
       </div>
     );
@@ -153,7 +154,11 @@ export function ChatFeed({ state, footer }: { state: MissionState; footer?: Reac
         )}
         {footer}
         {state.mission.status === "PAID" && state.payments[0] && (
-          <p className="text-center text-xs text-ink-400">Settlement is a scaled demo amount ({state.payments[0].settlementAmount} ℏ) representing the {usd(state.payments[0].amount)} offer.</p>
+          <p className="text-center text-xs text-ink-400">
+            {state.payments[0].settlementCurrency === "HBAR"
+              ? `Settlement is a scaled demo amount (${state.payments[0].settlementAmount} ℏ) representing the ${money(state.payments[0].amount)} offer.`
+              : `Settled in full: ${state.payments[0].settlementAmount.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${state.payments[0].settlementCurrency}, the HTS demo dinar token (1 token = 1 TND in the demo, no real value).`}
+          </p>
         )}
       </div>
     </div>

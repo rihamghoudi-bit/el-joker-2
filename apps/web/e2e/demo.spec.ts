@@ -39,17 +39,18 @@ test("scenario D: AI recommends an unverified supplier, the mission is blocked, 
   await expect(kpi(page, "Payment")).toContainText("No payment");
 });
 
-test("scenario E: payment stays on hold; wrong PIN refused; valid approval pays", async ({ page }) => {
+test("scenario E: payment locked in the vault; wrong PIN refused; valid approval co-signs and pays", async ({ page }) => {
   await enterChat(page);
   await sendScenario(page, /^Scenario E:/);
   await expect(page.getByText("Human approval required")).toBeVisible({ timeout: 60_000 });
-  await expect(kpi(page, "Payment")).toContainText("On hold");
+  await expect(kpi(page, "Payment")).toContainText("Locked in vault");
+  await expect(page.getByText("1 of 2 signatures").first()).toBeVisible();
 
   await page.getByLabel(/Reason/).fill("Need confirmed by the field team");
   await page.getByLabel("Operator PIN").fill("1111");
   await page.getByRole("button", { name: "✓ Approve" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Invalid operator PIN" })).toBeVisible();
-  await expect(kpi(page, "Payment")).toContainText("On hold");
+  await expect(kpi(page, "Payment")).toContainText("Locked in vault");
 
   await page.getByLabel("Operator PIN").fill(DEMO_PIN);
   await page.getByRole("button", { name: "✓ Approve" }).click();
@@ -71,6 +72,33 @@ test("scenario F: proof verified, then a deleted event is detected against the l
   await page.getByRole("button", { name: /Verify against Hedera/ }).click();
   await expect(page.getByText("TAMPERING DETECTED").first()).toBeVisible();
   await expect(page.getByText("Missing — deleted from the local database")).toBeVisible();
+});
+
+test("scenario I: ACME (second organization) — its own policy, vault above its 6,000 TND limit", async ({ page }) => {
+  await enterChat(page);
+  await sendScenario(page, /^Scenario I:/);
+  await expect(page.getByText(/Team, we have a new mission for ACME Tunisia/)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("exceeds the autonomous limit 6,000 TND").first()).toBeVisible({ timeout: 60_000 });
+  await expect(kpi(page, "Payment")).toContainText("Locked in vault");
+  await page.getByLabel(/Reason/).fill("Budget line ENG-2026 approved");
+  await page.getByLabel("Operator PIN").fill(DEMO_PIN);
+  await page.getByRole("button", { name: "✓ Approve" }).click();
+  await expect(kpi(page, "Payment")).toContainText("Paid", { timeout: 60_000 });
+});
+
+test("public verifier: the browser recomputes the proofs and catches a rewritten history", async ({ page, request }) => {
+  const { missionId } = await (await request.post("/api/scenarios/F_TAMPERING/run")).json();
+  await expect.poll(async () => {
+    const s = await (await request.get(`/api/missions/${missionId}`)).json();
+    return s.mission.status === "PAID" && !s.busy && !s.auditEvents.some((e: { anchor: { status: string } }) => e.anchor.status === "PENDING");
+  }, { timeout: 60_000 }).toBe(true);
+
+  await page.goto(`/verify?mission=${missionId}`);
+  await expect(page.getByText(/^VERIFIED/).first()).toBeVisible({ timeout: 30_000 });
+
+  await request.post(`/api/missions/${missionId}/tamper`, { data: { mode: "REWRITE_HASHES" } });
+  await page.getByRole("button", { name: "Verify this mission" }).click();
+  await expect(page.getByText("TAMPERING DETECTED").first()).toBeVisible({ timeout: 30_000 });
 });
 
 test("motion toggle turns the animated backdrop off and on", async ({ page }) => {

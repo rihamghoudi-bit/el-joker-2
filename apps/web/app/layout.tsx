@@ -8,7 +8,7 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: "EL JOKER 2.0 — 5ALIHA 3LINA",
-  description: "Verifiable AI-powered emergency procurement and autonomous spending governance on Hedera. Autonomous, but never uncontrolled.",
+  description: "The control layer for AI agents that spend money: AI proposes, rules decide, Hedera proves — and above the limit, a Hedera vault only a human co-signature can open. Autonomous, but never uncontrolled.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

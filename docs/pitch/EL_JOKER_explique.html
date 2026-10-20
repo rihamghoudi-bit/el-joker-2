@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>EL JOKER expliqué</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a field manual — sticky chapter rail on top, one column of chapters, the simulator as a two-pane "control room". */
+:root {
+  --bg: #f4f5fa;
+  --surface: #ffffff;
+  --sunken: #eceef6;
+  --ink: #151a3d;
+  --muted: #565d84;
+  --line: #d9dcea;
+  --gold: #a8730a;
+  --violet: #5b45c9;
+  --teal: #0f8a7e;
+  --red: #c4334d;
+  --green: #1f8a5b;
+  --blue: #2869c4;
+  --cyan: #1f7faf;
+  --amber: #9a6200;
+  --grey: #6b7394;
+  --chip-bg: #eef0f8;
+  --shadow: 0 1px 2px rgba(21,26,61,.06), 0 6px 24px -12px rgba(21,26,61,.18);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #090d24; --surface: #11173f; --sunken: #0d1233; --ink: #eceefa; --muted: #a4a9cc; --line: #262d63;
+    --gold: #f5c451; --violet: #a78bfa; --teal: #2dd4bf; --red: #f0506e; --green: #3ddc97; --blue: #5aa2ff; --cyan: #2bb8f0; --amber: #f5a524; --grey: #8a90b8;
+    --chip-bg: #1a2152; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #090d24; --surface: #11173f; --sunken: #0d1233; --ink: #eceefa; --muted: #a4a9cc; --line: #262d63;
+  --gold: #f5c451; --violet: #a78bfa; --teal: #2dd4bf; --red: #f0506e; --green: #3ddc97; --blue: #5aa2ff; --cyan: #2bb8f0; --amber: #f5a524; --grey: #8a90b8;
+  --chip-bg: #1a2152; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.12; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 800; letter-spacing: -.02em; }
+h2 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); font-weight: 800; letter-spacing: -.01em; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+.prose { max-width: 68ch; display: grid; gap: .8rem; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--f-mono); font-size: .86em; }
+.eyebrow { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 500; }
+a { color: var(--blue); }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+
+/* rail */
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.rail .wrap { display: flex; gap: .35rem; overflow-x: auto; padding-block: .55rem; scrollbar-width: none; }
+.rail a { flex: none; text-decoration: none; color: var(--muted); font-size: .86rem; font-weight: 500; padding: .35rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.rail a:hover { color: var(--ink); border-color: var(--line); }
+.rail a b { font-family: var(--f-mono); color: var(--gold); font-weight: 500; margin-right: .3rem; }
+
+header.hero { padding-block: 3rem 2rem; }
+.hero .wrap { display: grid; gap: 1.2rem; }
+.hero .lede { font-size: 1.15rem; max-width: 62ch; color: var(--muted); }
+.hero .lede b { color: var(--ink); font-weight: 600; }
+.formula { display: flex; flex-wrap: wrap; gap: .5rem; }
+.formula span { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; padding: .45rem .9rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.formula span:nth-child(1) { color: var(--violet); }
+.formula span:nth-child(2) { color: var(--red); }
+.formula span:nth-child(3) { color: var(--green); }
+
+section.chapter { padding-block: 2.6rem; border-top: 1px solid var(--line); scroll-margin-top: 56px; }
+section.chapter > .wrap { display: grid; gap: 1.4rem; }
+.chapter-head { display: grid; gap: .5rem; }
+
+/* cards */
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.15rem; display: grid; gap: .45rem; align-content: start; min-width: 0; }
+.card h3 { display: flex; align-items: center; gap: .55rem; }
+.dot { width: .8rem; height: .8rem; border-radius: 50%; flex: none; }
+.tag { font-family: var(--f-mono); font-size: .72rem; padding: .12rem .5rem; border-radius: 999px; background: var(--chip-bg); color: var(--muted); white-space: nowrap; }
+.tag.ai { color: var(--violet); }
+.tag.code { color: var(--teal); }
+.tag.used { color: var(--green); }
+.tag.notused { color: var(--grey); }
+
+/* simulator */
+.sim { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+.sim-bar { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: space-between; padding: .8rem 1rem; border-bottom: 1px solid var(--line); background: var(--sunken); }
+.seg { display: flex; flex-wrap: wrap; gap: .35rem; }
+.seg button, .btn { font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: .45rem .8rem; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.primary { background: var(--gold); color: #1b1300; border-color: var(--gold); }
+.btn:disabled { opacity: .45; cursor: default; }
+.controls { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+.stepcount { font-family: var(--f-mono); font-size: .82rem; color: var(--muted); min-width: 6.5rem; text-align: center; }
+.pipe { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; padding: .7rem 1rem; border-bottom: 1px solid var(--line); }
+.pipe .p { display: flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600; padding: .25rem .55rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.pipe .p i { font-style: normal; font-family: var(--f-mono); font-size: .75rem; }
+.pipe .p.active { border-color: var(--blue); color: var(--blue); }
+.pipe .p.done { border-color: var(--green); color: var(--green); }
+.pipe .p.blocked { border-color: var(--red); color: var(--red); }
+.pipe .p.review { border-color: var(--amber); color: var(--amber); }
+.pipe .sep { color: var(--grey); font-size: .8rem; }
+.sim-body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.chat { padding: 1rem; display: grid; gap: .8rem; align-content: start; max-height: 640px; overflow-y: auto; border-right: 1px solid var(--line); background: var(--bg); }
+.side { display: grid; grid-template-rows: auto auto; align-content: start; min-width: 0; }
+.explain { padding: 1rem 1.1rem; display: grid; gap: .6rem; border-bottom: 1px solid var(--line); min-width: 0; }
+.explain h3 { font-size: 1.05rem; }
+.explain .who { font-family: var(--f-mono); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; }
+.explain ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .3rem; }
+.explain .tech { background: var(--sunken); border-radius: 10px; padding: .6rem .75rem; font-size: .88rem; display: grid; gap: .3rem; }
+.explain .tech b { font-weight: 600; }
+.proofs { padding: .9rem 1.1rem 1.1rem; display: grid; gap: .5rem; min-width: 0; }
+.proofs-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.proofs-head h3 { font-size: .95rem; display: flex; align-items: center; gap: .45rem; }
+.live { width: .55rem; height: .55rem; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cyan) 25%, transparent); }
+.proof { border: 1px solid var(--line); border-radius: 12px; padding: .5rem .7rem; display: grid; gap: .2rem; font-size: .85rem; background: var(--surface); }
+.proof.bad { border-color: color-mix(in srgb, var(--red) 50%, var(--line)); }
+.proof .row { display: flex; justify-content: space-between; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.proof .row b { font-weight: 600; }
+.proof.bad .row b { color: var(--red); }
+.proof .meta { font-family: var(--f-mono); font-size: .74rem; color: var(--muted); overflow-wrap: anywhere; }
+.pending { color: var(--violet); font-weight: 600; font-size: .78rem; }
+.empty { color: var(--muted); font-size: .85rem; text-align: center; padding: .8rem; }
+
+.msg { display: flex; gap: .65rem; align-items: flex-start; animation: rise .35s ease both; }
+.msg.op { flex-direction: row-reverse; }
+.av { width: 2.2rem; height: 2.2rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: .95rem; color: #fff; flex: none; }
+.bubble { min-width: 0; max-width: 88%; display: grid; gap: .3rem; }
+.msg.op .bubble { justify-items: end; }
+.bname { font-size: .78rem; font-weight: 700; }
+.bname span { color: var(--muted); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; font-size: .7rem; margin-left: .3rem; }
+.btext { background: var(--surface); border: 1px solid var(--line); border-radius: 4px 16px 16px 16px; padding: .6rem .8rem; font-size: .92rem; overflow-wrap: anywhere; }
+.msg.op .btext { border-radius: 16px 4px 16px 16px; background: var(--blue); color: #fff; border-color: var(--blue); }
+.btext.working { font-style: italic; color: var(--muted); }
+.btext.alert { border-color: color-mix(in srgb, var(--red) 55%, var(--line)); background: color-mix(in srgb, var(--red) 8%, var(--surface)); }
+.btext.success { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); background: color-mix(in srgb, var(--green) 8%, var(--surface)); }
+.btext.proofk { border-color: color-mix(in srgb, var(--cyan) 55%, var(--line)); background: color-mix(in srgb, var(--cyan) 8%, var(--surface)); }
+.msg.current .btext { box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 55%, transparent); }
+.chips { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; }
+.chip { font-family: var(--f-mono); font-size: .68rem; font-weight: 500; padding: .12rem .45rem; border-radius: 6px; background: var(--chip-bg); color: var(--muted); border: 1px solid var(--line); }
+.chip.g { color: var(--green); } .chip.r { color: var(--red); } .chip.a { color: var(--amber); } .chip.v { color: var(--violet); } .chip.c { color: var(--cyan); }
+.checks { margin: .35rem 0 0; padding: 0; list-style: none; display: grid; gap: .15rem; font-size: .8rem; }
+.checks li { display: flex; gap: .4rem; }
+.checks .ok { color: var(--green); font-weight: 700; }
+.checks .ko { color: var(--red); font-weight: 700; }
+.checks .rv { color: var(--amber); font-weight: 700; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* glossary */
+.gl-tools { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.gl-tools input { font: inherit; padding: .5rem .8rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; flex: 1 1 220px; max-width: 360px; }
+.gl-table { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: .55rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--sunken); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+
+/* architecture */
+.arch { display: grid; gap: .8rem; }
+.arch-row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: stretch; }
+.node { font: inherit; text-align: left; cursor: pointer; flex: 1 1 180px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .7rem .85rem; color: var(--ink); display: grid; gap: .15rem; min-width: 0; }
+.node:hover { border-color: var(--gold); }
+.node[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 30%, transparent); }
+.node b { font-family: var(--f-display); font-size: 1rem; }
+.node small { color: var(--muted); font-size: .8rem; }
+.arrow { align-self: center; color: var(--grey); font-family: var(--f-mono); flex: none; }
+.arch-label { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.arch-detail { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 12px; padding: 1rem 1.1rem; display: grid; gap: .5rem; }
+.arch-detail ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .25rem; }
+
+/* hash lab */
+.lab { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.lab textarea, .lab input[type=text] { font: inherit; width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: .6rem .7rem; resize: vertical; }
+.hashout { font-family: var(--f-mono); font-size: .8rem; overflow-wrap: anywhere; background: var(--sunken); padding: .55rem .7rem; border-radius: 10px; }
+.chain { display: grid; gap: .6rem; }
+.block { border: 1px solid var(--line); border-radius: 12px; padding: .65rem .75rem; display: grid; gap: .3rem; background: var(--surface); }
+.block.broken { border-color: var(--red); background: color-mix(in srgb, var(--red) 6%, var(--surface)); }
+.block .bh { display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap; font-size: .85rem; }
+.block .meta { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); overflow-wrap: anywhere; }
+.verdict { font-weight: 700; padding: .55rem .8rem; border-radius: 10px; }
+.verdict.ok { color: var(--green); background: color-mix(in srgb, var(--green) 10%, var(--surface)); }
+.verdict.bad { color: var(--red); background: color-mix(in srgb, var(--red) 10%, var(--surface)); }
+.lab-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+/* quiz */
+.quiz { display: grid; gap: .8rem; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: .9rem 1rem; display: grid; gap: .55rem; }
+.q .opts { display: grid; gap: .35rem; }
+.q button.opt { font: inherit; text-align: left; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: .5rem .7rem; }
+.q button.opt.right { border-color: var(--green); color: var(--green); font-weight: 600; }
+.q button.opt.wrong { border-color: var(--red); color: var(--red); }
+.q .fb { font-size: .9rem; color: var(--muted); }
+
+.callout { border-left: 4px solid var(--violet); background: var(--surface); border-radius: 0 12px 12px 0; padding: .8rem 1rem; display: grid; gap: .35rem; }
+.callout.warn { border-left-color: var(--amber); }
+footer { padding-block: 2rem 3rem; color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); }
+
+@media (max-width: 820px) {
+  .sim-body { grid-template-columns: minmax(0, 1fr); }
+  .chat { border-right: 0; border-bottom: 1px solid var(--line); max-height: 460px; }
+}
+@media (prefers-reduced-motion: reduce) { .msg { animation: none; } html { scroll-behavior: auto; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<nav class="rail" aria-label="Chapitres">
+  <div class="wrap">
+    <a href="#idee"><b>1</b>L'idée</a>
+    <a href="#envoyer"><b>2</b>Quand tu cliques « Envoyer »</a>
+    <a href="#badges"><b>3</b>Messages et badges</a>
+    <a href="#architecture"><b>4</b>Architecture</a>
+    <a href="#hedera"><b>5</b>Hedera de zéro</a>
+    <a href="#empreintes"><b>6</b>Empreintes et falsification</a>
+    <a href="#ia"><b>7</b>L'IA</a>
+    <a href="#business"><b>8</b>Business</a>
+    <a href="#quiz"><b>9</b>Teste-toi</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Manuel de l'équipe Chain619</p>
+    <h1>EL JOKER, expliqué depuis zéro</h1>
+    <p class="lede">EL JOKER, c'est <b>la couche de contrôle pour les agents IA qui dépensent de l'argent</b> : 5 agents logiciels qui achètent pour une organisation (une ONG en urgence, une entreprise qui équipe ses équipes). Un seul agent utilise l'IA, pour conseiller. Les quatre autres sont du code strict qui vérifie, décide et paie. Au-dessus de la limite, l'argent est bloqué dans un <b>coffre Hedera</b> que seule une signature humaine peut ouvrir. Chaque décision laisse une preuve sur <b>Hedera</b>, un registre public que personne ne peut modifier, même pas vous.</p>
+    <div class="formula" aria-label="La formule du projet">
+      <span>L'IA propose</span><span>Les règles décident</span><span>Hedera prouve</span>
+    </div>
+    <p class="muted">Commence par le chapitre 2 : c'est le simulateur qui rejoue exactement ce que fait le site quand tu envoies une demande.</p>
+  </div>
+</header>
+
+<!-- 1 -->
+<section class="chapter" id="idee">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 1</p>
+      <h2>L'idée, en vraie vie</h2>
+    </div>
+    <div class="prose">
+      <p>Imagine une ONG à Gabès. Le réseau d'eau tombe en panne, 500 personnes ont besoin d'eau et de médicaments en 48 heures, et il y a 15 000 dinars. Il faut acheter vite, mais sans se tromper : un faux fournisseur, un prix gonflé ou une facture payée deux fois, ce sont des médicaments qui n'arrivent jamais.</p>
+      <p>Dans une vraie organisation, on ne laisse jamais une seule personne choisir le fournisseur, valider et payer. On sépare les rôles. EL JOKER fait la même chose avec 5 agents :</p>
+    </div>
+    <div class="grid">
+      <div class="card"><h3><span class="dot" style="background:var(--gold)"></span>Lem3alem</h3><span class="tag">Le chef de projet</span><p>Il lit la demande et en fait une mission propre : lieu, nombre de personnes, budget, délai, articles. S'il manque une info importante, il la demande au lieu de deviner.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--violet)"></span>Lemhaf</h3><span class="tag ai">L'acheteur · IA (Claude)</span><p>Il compare les offres des fournisseurs et recommande la meilleure, en expliquant pourquoi. C'est le seul qui utilise l'IA. Il peut se tromper, donc il n'a aucun pouvoir.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--teal)"></span>Nasnes</h3><span class="tag code">Le contrôleur · code</span><p>Il vérifie tout, de façon indépendante : le fournisseur existe et il est vérifié, il livre dans la région, les calculs sont justes, les documents sont là, la facture n'a jamais servi.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--red)"></span>3ases</h3><span class="tag code">Le règlement · code, sans IA</span><p>Il applique 13 règles fixes et donne une décision : approuvé, bloqué, ou « un humain doit décider ». Personne ne peut le convaincre, parce que ce n'est pas une IA.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--green)"></span>Kanawita</h3><span class="tag code">Le caissier · code + Hedera</span><p>Il paie, mais seulement si tout le monde a dit oui. Il revérifie lui-même avant de payer, et il refuse de payer deux fois. Au-dessus de la limite, il ne peut que <b>bloquer</b> l'argent dans le coffre.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--cyan)"></span>Hedera</h3><span class="tag used">Le notaire public</span><p>Chaque décision importante y est enregistrée sous forme d'empreinte. Après, personne ne peut réécrire l'histoire sans que ça se voie. Et pour les gros montants, c'est Hedera qui exige la signature humaine.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--teal)"></span>Le coffre 2 sur 2</h3><span class="tag used">Le coffre-fort à deux clés</span><p>Un compte Hedera qui a besoin de <b>deux</b> signatures : celle des agents et celle d'un humain. Les agents peuvent préparer le paiement, mais seul l'humain peut le débloquer. S'il refuse, le paiement préparé est supprimé.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--blue)"></span>Deux organisations</h3><span class="tag">ONG et entreprise</span><p>Les mêmes agents travaillent pour une ONG (limite 15 000 TND, eau et médicaments) et pour une entreprise, ACME (limite 6 000 TND, ordinateurs et fournitures). Seul le fichier de règles change.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="chapter" id="envoyer">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 2 · le plus important</p>
+      <h2>Ce qui se passe quand tu cliques « Envoyer »</h2>
+      <p class="muted" style="max-width:68ch">Choisis un scénario, puis avance message par message. À gauche, la conversation telle qu'elle apparaît sur le site. À droite, l'explication de chaque message et le panneau « Live Hedera proofs » qui se remplit. Les textes en anglais sont exactement ceux du code.</p>
+    </div>
+
+    <div class="sim" id="sim">
+      <div class="sim-bar">
+        <div class="seg" role="group" aria-label="Scénario">
+          <button type="button" data-sc="A" aria-pressed="true">A · Approuvé</button>
+          <button type="button" data-sc="D" aria-pressed="false">D · Fournisseur piège</button>
+          <button type="button" data-sc="B" aria-pressed="false">B · Budget trop petit</button>
+          <button type="button" data-sc="E" aria-pressed="false">E · Coffre Hedera</button>
+          <button type="button" data-sc="I" aria-pressed="false">I · ACME (entreprise)</button>
+        </div>
+        <div class="controls">
+          <button type="button" class="btn" id="prev">◀ Précédent</button>
+          <span class="stepcount" id="count">0 / 0</span>
+          <button type="button" class="btn primary" id="next">Suivant ▶</button>
+          <button type="button" class="btn" id="play">Lecture auto</button>
+          <button type="button" class="btn" id="reset">Recommencer</button>
+        </div>
+      </div>
+      <div class="pipe" id="pipe" aria-label="Avancement des agents"></div>
+      <div class="sim-body">
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="side">
+          <div class="explain" id="explain"></div>
+          <div class="proofs">
+            <div class="proofs-head">
+              <h3><span class="live"></span>Live Hedera proofs</h3>
+              <span class="chip g">HCS · 0.0.11007004</span>
+            </div>
+            <div id="proofs" style="display:grid;gap:.45rem"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>Le chemin d'un clic, en une ligne</b>
+      <p>Ton navigateur envoie la demande au site (Next.js, port 3000), qui la transmet à l'API (Express, port 4000). L'API fait travailler les agents l'un après l'autre et enregistre chaque message dans la base SQLite. Pendant ce temps, ton navigateur redemande l'état de la mission toutes les 0,8 seconde (toutes les 3 secondes quand rien ne bouge) : c'est pour ça que les messages apparaissent un par un.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="chapter" id="badges">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 3</p>
+      <h2>Tous les messages et badges, un par un</h2>
+      <p class="muted" style="max-width:68ch">Les petits badges sous chaque message (et dans le panneau de droite) résument ce qui vient de se passer. Tape un mot pour filtrer.</p>
+    </div>
+    <div class="gl-tools">
+      <label for="gl-search" class="muted">Rechercher</label>
+      <input id="gl-search" type="search" placeholder="ex. RISK, HashScan, consensus…">
+      <span class="muted" id="gl-n"></span>
+    </div>
+    <div class="gl-table">
+      <table>
+        <thead><tr><th>Badge ou texte</th><th>Où</th><th>Ce que ça veut dire</th></tr></thead>
+        <tbody id="gl-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="chapter" id="architecture">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 4</p>
+      <h2>L'architecture : qui parle à qui</h2>
+      <p class="muted" style="max-width:68ch">Clique sur une boîte pour savoir ce qu'elle fait, avec quelle technologie, et où elle se trouve dans le code. Tout le projet est écrit en TypeScript (du JavaScript avec des types).</p>
+    </div>
+    <div class="arch" id="arch">
+      <p class="arch-label">Sur ton PC, dans le navigateur</p>
+      <div class="arch-row">
+        <button type="button" class="node" data-n="browser"><b>Navigateur</b><small>ce que tu vois : la page web</small></button>
+        <span class="arrow">→</span>
+        <button type="button" class="node" data-n="web"><b>Site Next.js</b><small>localhost:3000 · l'interface</small></button>
+        <span class="arrow">→ /api →</span>
+        <button type="button" class="node" data-n="api"><b>API Express</b><small>localhost:4000 · le cerveau</small></button>
+        <span class="arrow">·</span>
+        <button type="button" class="node" data-n="verifier"><b>Vérificateur public</b><small>/verify · dans ton navigateur</small></button>
+      </div>
+      <p class="arch-label">Dans l'API</p>
+      <div class="arch-row">
+        <button type="button" class="node" data-n="agents"><b>Les 5 agents</b><small>le pipeline de la mission</small></button>
+        <button type="button" class="node" data-n="guardian"><b>3ases + policy.json</b><small>les 13 règles</small></button>
+        <button type="button" class="node" data-n="proof"><b>Service de preuves</b><small>empreintes + chaîne</small></button>
+        <button type="button" class="node" data-n="shared"><b>Schémas partagés</b><small>Zod, packages/shared</small></button>
+      </div>
+      <p class="arch-label">Ce que l'API utilise</p>
+      <div class="arch-row">
+        <button type="button" class="node" data-n="db"><b>SQLite</b><small>la base de données locale</small></button>
+        <button type="button" class="node" data-n="claude"><b>API Claude</b><small>Anthropic, sur internet</small></button>
+        <button type="button" class="node" data-n="hnodes"><b>Nœuds Hedera</b><small>testnet · écriture</small></button>
+        <button type="button" class="node" data-n="mirror"><b>Mirror Node</b><small>testnet · lecture</small></button>
+      </div>
+      <div class="arch-detail" id="arch-detail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="chapter" id="hedera">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 5</p>
+      <h2>Hedera, depuis zéro</h2>
+    </div>
+    <div class="prose">
+      <p><b>Hedera</b> est un registre public partagé, comme une blockchain. Des dizaines d'ordinateurs (les « nœuds »), gérés par de grandes organisations différentes, gardent chacun une copie des mêmes transactions. Pour qu'une transaction soit acceptée, ils doivent se mettre d'accord sur elle et sur son ordre : c'est le <b>consensus</b>. Une fois acceptée, elle est définitive : personne ne peut la modifier ni l'effacer, pas même celui qui l'a envoyée.</p>
+      <p>Hedera n'utilise pas une chaîne de blocs classique mais un algorithme appelé <b>hashgraph</b> : les nœuds se racontent en permanence ce qu'ils ont reçu (« gossip about gossip ») et en déduisent l'ordre des transactions sans vote explicite. Résultat : la décision est rapide (quelques secondes), les frais sont faibles et fixés en dollars, et l'ordre est horodaté pour tout le monde.</p>
+      <p>Il existe deux réseaux : le <b>mainnet</b> (vrai argent) et le <b>testnet</b> (argent de test gratuit). EL JOKER utilise uniquement le testnet.</p>
+    </div>
+    <p class="arch-label">Les notions, et ce que nous en utilisons</p>
+    <div class="grid" id="hconcepts"></div>
+    <div class="callout">
+      <b>Ce qui est envoyé sur Hedera pour chaque décision (un message HCS)</b>
+      <p>Seulement des identifiants et des empreintes, moins de 1 Ko. Exemple réel de structure :</p>
+      <pre class="hashout" style="white-space:pre-wrap;margin:0">{ "p": "eljoker", "v": "1", "m": "msn_…", "e": "evt_…",
+  "t": "GUARDIAN_APPROVED", "s": 3,
+  "h":  "sha256 de la preuve complète (gardée chez nous)",
+  "ph": "eventHash de l'événement précédent",
+  "eh": "eventHash de cet événement",
+  "pv": "2.1.0+…", "ts": "2026-10-12T…" }</pre>
+      <p class="muted">p = protocole, v = version, m = mission, e = événement, t = type, s = numéro dans la mission, h = empreinte des preuves, ph / eh = maillons de la chaîne, pv = version des règles, ts = heure. Aucun nom, aucun prix, aucun document.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="chapter" id="empreintes">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 6 · à manipuler</p>
+      <h2>Empreintes, chaîne et falsification</h2>
+      <p class="muted" style="max-width:68ch">C'est le cœur du lien avec Hedera. Une <b>empreinte SHA-256</b> (un « hash ») est un code de 64 caractères calculé à partir d'un texte. Le même texte donne toujours la même empreinte, mais changer une seule lettre donne une empreinte complètement différente. Et à partir de l'empreinte, impossible de retrouver le texte.</p>
+    </div>
+    <div class="lab">
+      <div class="card">
+        <h3>Essaie : calcule une empreinte</h3>
+        <label for="hash-in" class="muted">Écris ou modifie le texte (change juste un chiffre) :</label>
+        <textarea id="hash-in" rows="3">Oasis Medical &amp; Water Supply · total 12450 TND · facture n° 0001 (exemple)</textarea>
+        <p class="muted">Empreinte SHA-256 :</p>
+        <div class="hashout" id="hash-out">…</div>
+        <p class="muted" style="font-size:.88rem">Dans le projet, la preuve complète d'une décision (le JSON avec tous les détails) est d'abord mise en « JSON canonique » (toujours les clés dans le même ordre), puis on calcule son empreinte. C'est le champ <span class="mono">h</span> envoyé sur Hedera.</p>
+      </div>
+      <div class="card">
+        <h3>La chaîne d'une mission</h3>
+        <p class="muted" style="font-size:.9rem">Chaque événement contient l'empreinte du précédent. Si on modifie un événement, son empreinte change et le maillon suivant ne correspond plus. Une copie de chaque empreinte est sur Hedera.</p>
+        <div class="chain" id="chain"></div>
+        <div class="lab-actions">
+          <button type="button" class="btn" id="t-edit">1. Modifier le prix</button>
+          <button type="button" class="btn" id="t-rewrite">2. Modifier + recalculer les empreintes</button>
+          <button type="button" class="btn" id="t-delete">3. Supprimer le paiement</button>
+          <button type="button" class="btn" id="t-reset">Remettre</button>
+        </div>
+        <div class="lab-actions">
+          <button type="button" class="btn" id="v-local">Vérif. locale (sans Hedera)</button>
+          <button type="button" class="btn primary" id="v-hedera">Verify against Hedera</button>
+        </div>
+        <div class="verdict" id="verdict" hidden></div>
+      </div>
+    </div>
+    <div class="callout warn">
+      <b>Pourquoi c'est l'argument principal face au jury</b>
+      <p>Une vérification locale attrape l'attaque 1, mais pas les attaques 2 et 3 : un initié malin recalcule toutes les empreintes, ou efface simplement le dernier événement, et tout a l'air parfait. Seule la copie sur Hedera, que personne ne peut modifier, révèle la différence. C'est exactement ce que fait le bouton « Verify against Hedera » du site, en lisant le Mirror Node.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="chapter" id="ia">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 7</p>
+      <h2>L'IA dans le projet</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Quel modèle ?</h3><p><b>Claude Opus 5.5</b> (identifiant <span class="mono">claude-opus-5-5</span>), d'Anthropic, appelé par internet avec la clé <span class="mono">ANTHROPIC_API_KEY</span> du fichier <span class="mono">.env</span>. Le code est dans <span class="mono">apps/api/src/ai/aiClient.ts</span>.</p></div>
+      <div class="card"><h3>Ce que fait Lemhaf avec Claude</h3><p>On lui envoie la mission et les offres (avec les totaux déjà calculés, pour qu'il ne refasse pas les calculs). Il renvoie un classement : rang, score, justification, inquiétudes, et les « faits » qu'il affirme (fournisseur, prix, délai).</p></div>
+      <div class="card"><h3>Ce que fait Lem3alem avec Claude</h3><p>Seulement si tu écris une demande libre : Claude transforme ton texte en mission structurée. Si tu envoies un scénario pré-rempli tel quel, la mission est déjà structurée et Claude n'est pas appelé (badge <span class="mono">DETERMINISTIC</span>).</p></div>
+      <div class="card"><h3>Sortie structurée</h3><p>On demande à Claude une réponse au format JSON, validée par un schéma <b>Zod</b>. Si la réponse ne respecte pas le schéma, elle est refusée. L'IA ne peut donc pas répondre « n'importe quoi » à la place des données attendues.</p></div>
+      <div class="card"><h3>Si Claude ne répond pas</h3><p>Après 45 secondes (une seule nouvelle tentative), on passe au classement par règles simples, affiché <span class="mono">FALLBACK · rule-based</span>. Le reste ne change pas : les contrôles et les règles sont les mêmes.</p></div>
+      <div class="card"><h3>Pourquoi l'IA ne décide jamais</h3><p>Une IA peut <b>halluciner</b> (inventer un fait) ou être <b>manipulée</b> (« prompt injection » : un texte caché qui lui donne des ordres). Donc Nasnes vérifie ses affirmations, 3ases décide sans IA, et on cache même à l'IA le statut « vérifié » des fournisseurs pour qu'elle ne puisse pas recopier la réponse.</p></div>
+    </div>
+    <div class="callout">
+      <b>Exemple réel (scénario D)</b>
+      <p>Avec un délai de 12 heures, Claude a choisi le courtier le moins cher et le plus rapide (Sahel Express, non vérifié). Il a même signalé lui-même un risque de fraude sur les prix. Mais ça n'a aucune importance : ce n'est pas lui qui décide. Nasnes rejette, 3ases bloque, aucun argent ne bouge.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="chapter" id="business">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 8</p>
+      <h2>Le business : à quoi ça sert dans le monde réel</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Le problème</h3><p>Les agents IA commencent à agir (commander, payer). Dès qu'ils dépensent de l'argent, trois risques : ils inventent, ils dépensent trop ou paient deux fois, et leurs traces peuvent être modifiées. Aujourd'hui on choisit entre autonomie et contrôle.</p></div>
+      <div class="card"><h3>Pour qui</h3><p>Toute organisation qui laisse un agent IA dépenser. D'abord les ONG et programmes de subventions (ils doivent justifier chaque dinar aux donateurs), puis les achats des entreprises. Les deux sont dans la démo.</p></div>
+      <div class="card"><h3>La valeur</h3><p>La rapidité d'un agent IA pour la routine, des règles de dépense impossibles à contourner, et une preuve publique que n'importe qui (donateur, auditeur) peut vérifier lui-même.</p></div>
+      <div class="card"><h3>Qui paie (hypothèse)</h3><p>Un abonnement par organisation plus un coût par preuve enregistrée. C'est une hypothèse : elle n'a pas encore été validée avec de vrais clients.</p></div>
+      <div class="card"><h3>Ce qui est fictif aujourd'hui</h3><p>Les fournisseurs et les deux organisations (marqués « demo »), le jeton EJTND, notre dinar de test (pas de valeur réelle), la clé de l'approbateur gardée par notre serveur, et le PIN opérateur (0619). Hedera, Claude et les paiements sur testnet, eux, sont réels.</p></div>
+      <div class="card"><h3>La suite</h3><p>Vrais fournisseurs et un partenaire agréé pour un vrai dinar numérique (avec l'accord de la Banque centrale) au lieu de notre jeton de test, puis des approbateurs qui signent depuis leur propre portefeuille, puis deux pilotes en Tunisie (une ONG, une entreprise), puis une bibliothèque de politiques par secteur.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="chapter" id="quiz">
+  <div class="wrap">
+    <div class="chapter-head">
+      <p class="eyebrow">Chapitre 9</p>
+      <h2>Teste-toi avant le jury</h2>
+      <p class="muted">Clique sur une réponse : l'explication s'affiche.</p>
+    </div>
+    <div class="quiz" id="quizbox"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">EL JOKER 2.0 · Team Chain619 · Hedera Hackathon 2026. Textes des messages repris du code du projet (apps/api/src/orchestrator/missionService.ts et agents/kanawita.ts).</div>
+</footer>
+
+<script>
+(() => {
+  const AG = {
+    OPERATOR: { name: "You · Operator", role: "", color: "var(--blue)", init: "Toi" },
+    LEM3ALEM: { name: "Lem3alem", role: "Coordinator", color: "var(--gold)", init: "L" },
+    LEMHAF: { name: "Lemhaf", role: "AI research", color: "var(--violet)", init: "H" },
+    NASNES: { name: "Nasnes", role: "Verifier", color: "var(--teal)", init: "N" },
+    "3ASES": { name: "3ases", role: "Guardian", color: "var(--red)", init: "3" },
+    KANAWITA: { name: "Kanawita", role: "Payment", color: "var(--green)", init: "K" },
+  };
+  const PIPE = ["LEM3ALEM", "LEMHAF", "NASNES", "3ASES", "KANAWITA"];
+  const chipClass = (c) => /APPROVED|VERIFIED|PAID|RISK LOW|HUMAN APPROVED/.test(c) ? "g" : /BLOCKED|REJECTED|NO PAYMENT|CRITICAL|REFUSED/.test(c) ? "r" : /REVIEW|HOLD|HIGH|MEDIUM/.test(c) ? "a" : /REAL AI|AI ANALYZING/.test(c) ? "v" : /PROOF/.test(c) ? "c" : "";
+
+  const NASNES_OK = [
+    ["ok", "Supplier in registry", "Oasis Medical & Water Supply (demo) found in registry"],
+    ["ok", "Supplier verified", "Verified — registre de démo"],
+    ["ok", "Serves mission region", "Serves Gabès"],
+    ["ok", "All requested items present", "3/3 items in full quantity"],
+    ["ok", "Price arithmetic consistent", "Line totals sum to 12,450 TND"],
+    ["ok", "Evidence documents", "Quote, invoice and license evidence present (hashed)"],
+    ["ok", "Invoice not reused", "Invoice … is new"],
+    ["ok", "Recommendation claims supported", "Stated facts match the records"],
+    ["ok", "Plausible pricing", "Unit prices plausible vs reference"],
+    ["ok", "Delivery meets deadline", "20h fits the deadline"],
+  ];
+  const G_OK = ["Valid mission state", "NASNES verification", "Verified supplier", "Allowed region", "Allowed spending category", "Currency match", "Within mission budget", "Price anomaly", "Duplicate invoice", "Duplicate payment", "Autonomous spending limit", "Human approval threshold"].map((l) => ["ok", l, "PASS"]);
+
+  const S = (o) => o;
+  const common = {
+    lemWork: (city) => S({ agent: "LEMHAF", kind: "working", text: "Searching… asking Claude to rank supplier offers for " + city + ".", chips: ["AI ANALYZING"], pipe: { LEM3ALEM: "done", LEMHAF: "active" },
+      title: "Lemhaf commence la recherche", ex: ["La mission passe au statut RESEARCHING.", "Le « marché de démo » (fournisseurs fictifs) produit les offres des fournisseurs qui livrent dans cette région.", "Ces offres, avec leurs totaux déjà calculés, sont envoyées à Claude par internet."],
+      tech: "Fichiers : <b>agents/marketplace.ts</b> (offres) puis <b>agents/lemhaf.ts</b> → <b>ai/aiClient.ts</b> (appel à Claude, réponse JSON validée par Zod). Si Claude n'est pas configuré, le texte dit « rule-based fallback »." }),
+    nasWork: (sup) => S({ agent: "NASNES", kind: "working", text: "Checking " + sup + " against the registry, the evidence and LEMHAF's claims.", chips: ["VERIFYING"], pipe: { LEMHAF: "done", NASNES: "active" },
+      title: "Nasnes commence la vérification", ex: ["Statut VERIFYING.", "Nasnes ne fait pas confiance à Lemhaf : il relit lui-même le registre des fournisseurs, l'offre, les documents et l'historique des factures."], tech: "Fichier : <b>agents/nasnes.ts</b>. Code pur, aucune IA (badge DETERMINISTIC)." }),
+    gWork: S({ agent: "3ASES", kind: "working", text: "Rules are rules. Applying policy 2.1.0+… — deterministic rules, no AI.", chips: ["EVALUATING"], pipe: { NASNES: "done", "3ASES": "active" },
+      title: "3ases applique le règlement", ex: ["Statut EVALUATING.", "« 2.1.0+… » est la version des règles : 2.1.0 plus une empreinte du fichier policy.json. Si quelqu'un change une règle, la version change, et elle est écrite dans chaque preuve.", "3ases reconstruit une « photo » des faits à partir de la base de données et calcule son empreinte (inputHash)."], tech: "Fichiers : <b>agents/guardian/engine.ts</b> (fonction <b>evaluate</b>) et <b>agents/guardian/policy.json</b> (limite autonome 15 000 TND, plafond 75 000 TND, régions et catégories autorisées, seuils de prix)." }),
+  };
+
+  const proof = (type, label, bad) => ({ type, label, bad: !!bad });
+
+  const SC = {
+    A: [
+      S({ agent: "OPERATOR", kind: "request", text: "500 people in Gabès need drinking water and essential medicine after a water network failure. Budget: 15,000 TND. Delivery within 48 hours to the civil-protection warehouse.", chips: ["REQUEST SENT"], pipe: {},
+        title: "Tu envoies la demande", ex: ["Le navigateur envoie une requête à l'API : <span class='mono'>POST /api/scenarios/A_APPROVED/run</span> si tu envoies le scénario tel quel, ou <span class='mono'>POST /api/missions</span> si tu as modifié le texte.", "Next.js (port 3000) transmet la requête à l'API Express (port 4000). Les clés secrètes ne sont jamais dans le navigateur.", "L'API crée une mission avec un identifiant <span class='mono'>msn_…</span> et enregistre ton message dans la conversation."], tech: "Fichiers : <b>apps/web/components/ChatComposer.tsx</b> (bouton Envoyer), <b>apps/api/src/app.ts</b> (routes), <b>orchestrator/missionService.ts</b> (createMission)." }),
+      S({ agent: "LEM3ALEM", kind: "status", text: "Team, we have a new mission for South Tunisia Relief Network (demo NGO): Emergency water and essential medicine for 500 people in Gabès after a water network failure. Budget 15,000 TND, 500 people, Gabès.", chips: ["MISSION CREATED", "RELIEF NGO", "DETERMINISTIC"], pipe: { LEM3ALEM: "done" }, proof: proof("MISSION_CREATED", "Mission created"),
+        title: "Lem3alem crée la mission", ex: ["Il vérifie que la mission est complète : lieu, bénéficiaires, articles, budget, délai. Sinon il répond « Some information is missing » et s'arrête.", "Badge DETERMINISTIC : le scénario était déjà structuré, Claude n'a pas été appelé. Avec un texte libre, tu verrais « REAL AI · claude-opus-5-5 ».", "<b>Première preuve</b> : l'événement MISSION_CREATED est créé, son empreinte calculée, et il part vers Hedera (à droite : « consensus… »)."], tech: "Fichiers : <b>agents/lem3alem.ts</b> (planMission) et <b>audit/proofService.ts</b> (recordEvent : empreinte + chaîne + envoi HCS en file d'attente)." }),
+      common.lemWork("Gabès"),
+      S({ agent: "LEMHAF", kind: "result", text: "I found 3 offers. My pick: Oasis Medical & Water Supply (demo) — 12,450 TND, 20h delivery. [explication de Claude]", chips: ["RECOMMENDATION", "REAL AI · claude-opus-5-5", "DEMO DATA"], pipe: { LEMHAF: "done" }, proof: proof("AI_RECOMMENDATION", "AI recommendation"), details: "Ranking of 3 offers (cliquable sur le site) : rang, score et justification pour chaque offre, plus les « Concerns » de Claude.",
+        title: "Claude recommande Oasis", ex: ["Claude a classé 3 offres et choisi Oasis : 3 000 bouteilles × 1,5 TND + 50 kits × 126 TND + 1 000 sachets × 1,65 TND = 12 450 TND.", "REAL AI · claude-opus-5-5 = c'est vraiment Claude qui a répondu. DEMO DATA = les fournisseurs sont fictifs.", "<b>Preuve 2</b> : AI_RECOMMENDATION. On garde aussi le mode (REAL_AI ou FALLBACK) et le modèle, pour prouver plus tard qui a recommandé quoi."], tech: "Le texte de Claude est une recommandation, pas un ordre. Il est enregistré dans la base (table des recommandations) et sera contrôlé par Nasnes." }),
+      common.nasWork("Oasis Medical & Water Supply (demo)"),
+      S({ agent: "NASNES", kind: "success", text: "All good. Oasis Medical & Water Supply (demo) checks out: registry, region, items, arithmetic and evidence all verified.", chips: ["VERIFIED", "DETERMINISTIC"], checks: NASNES_OK, pipe: { NASNES: "done" }, proof: proof("SUPPLIER_VERIFIED", "Supplier verified"),
+        title: "Nasnes valide : 10 contrôles sur 10", ex: ["Les 7 premiers contrôles sont bloquants (REJECT) s'ils échouent. Les 3 derniers (affirmations de l'IA, prix plausibles, délai) demandent une revue (REVIEW).", "« Recommendation claims supported » : il compare ce que Claude affirme (nom, prix, délai, « fournisseur vérifié ») avec la base. Si Claude a inventé, ça se voit ici.", "<b>Preuve 3</b> : SUPPLIER_VERIFIED, avec les empreintes des documents (devis, facture, licence)."], tech: "Résultat possible : VERIFIED, NEEDS_REVIEW ou REJECTED. Kanawita exigera VERIFIED." }),
+      common.gWork,
+      S({ agent: "3ASES", kind: "success", text: "Everything checks out. APPROVED — risk LOW. All 12 policy checks passed.", chips: ["APPROVED", "RISK LOW", "NO LLM"], checks: G_OK, pipe: { "3ASES": "done" }, proof: proof("GUARDIAN_APPROVED", "Guardian approved"),
+        title: "3ases approuve", ex: ["Le code contient 13 règles. Ici, 12 s'affichent : la 13ᵉ (« Offer under evaluation ») n'apparaît que s'il n'y a pas d'offre.", "Chaque règle donne PASS, REVIEW (un humain doit décider) ou BLOCK. Une seule BLOCK = mission bloquée.", "Risque LOW : un score calculé avec des poids (au-dessus de la limite autonome +40, proche du budget +10, alerte fournisseur +15, prix anormal +20, urgence critique +10). LOW < 20 ≤ MEDIUM < 40 ≤ HIGH < 70 ≤ CRITICAL.", "<b>Preuve 4</b> : GUARDIAN_APPROVED. C'est l'autorisation de payer, et Kanawita attendra qu'elle soit sur Hedera."], tech: "Sur le site, sous le message : la version des règles, le score de risque et l'<b>input hash</b> (empreinte des faits évalués)." }),
+      S({ agent: "KANAWITA", kind: "working", text: "Checking authorization before moving any money…", chips: ["CHECKING AUTHORIZATION"], pipe: { KANAWITA: "active" },
+        title: "Kanawita revérifie tout", ex: ["Il ne fait confiance à personne. Avant de payer, il vérifie lui-même : 1) il relance 3ases sur des données fraîches (doit dire APPROVED), 2) Nasnes = VERIFIED, 3) une validation humaine valide si elle était exigée, 4) la mission n'est pas déjà payée et la clé d'idempotence jamais utilisée.", "5) Il attend que la preuve GUARDIAN_APPROVED soit vraiment sur Hedera (jusqu'à 45 s). Pas de preuve = pas de paiement."], tech: "Fichier : <b>agents/kanawita.ts</b> (authorize + execute). Clé d'idempotence = un identifiant unique de ce paiement ; la base refuse un deuxième paiement avec la même clé." }),
+      S({ agent: "KANAWITA", kind: "working", text: "Authorized. Sending 12,450 EJTND on Hedera testnet…", chips: ["PAYING"], pipe: { KANAWITA: "active" }, proof: proof("PAYMENT_INITIATED", "Payment initiated"),
+        title: "Le paiement part", ex: ["Avec le jeton EJTND (notre dinar de test, créé avec le Token Service de Hedera : 1 EJTND = 1 dinar), on paie le montant complet : 12 450 EJTND. Sans ce jeton, on paie un petit montant en HBAR : 12 450 TND ÷ 1 000 × 0,08 = 0,996 ℏ.", "Le paiement est d'abord inscrit dans la base (statut INITIATED) : les contraintes de la base refusent un doublon.", "<b>Preuve 5</b> : PAYMENT_INITIATED.", "Puis une <b>TransferTransaction</b> Hedera (transfert du jeton EJTND) est signée avec la clé des agents et envoyée au compte du fournisseur de démo. 12 450 TND est sous la limite de 15 000 TND : les agents paient seuls, depuis leur propre compte."], tech: "Fichier : <b>hedera/sdkGateway.ts</b> (SDK @hashgraph/sdk). Si le reçu se perd, on redemande le reçu de la même transaction au lieu d'en renvoyer une nouvelle." }),
+      S({ agent: "KANAWITA", kind: "success", text: "Payment sent ✅ 12,450 EJTND confirmed on Hedera testnet. Receipt: SUCCESS.", chips: ["PAID"], pipe: { KANAWITA: "done" }, proof: proof("PAYMENT_CONFIRMED", "Payment confirmed"), details: "tx 0.0.10569347@1791831141.287680039 · View on HashScan · Mirror Node confirmed",
+        title: "Payé et confirmé", ex: ["Le <b>reçu</b> Hedera dit SUCCESS : la transaction a passé le consensus. Seulement là, la mission passe à PAID.", "L'identifiant de transaction se lit « compte qui paie @ secondes.nanosecondes ».", "« View on HashScan » ouvre l'explorateur public. Quelques secondes après, le badge « Mirror Node confirmed » apparaît : on a relu la transaction sur le Mirror Node.", "<b>Preuve 6</b> : PAYMENT_CONFIRMED. Total : 6 preuves pour cette mission."], tech: "Le bouton « Replay payment (attack) » renverrait exactement le même paiement : Kanawita répondrait « The same payment twice? Rejected. 🛑 » (HTTP 409) et il n'y aurait toujours qu'un seul paiement." }),
+      S({ agent: "NASNES", kind: "proofk", text: "Proof verified: [résumé de la vérification].", chips: ["PROOF VERIFIED"], pipe: {}, bonus: true,
+        title: "Bonus : tu cliques « Verify against Hedera »", ex: ["L'API relit sur le <b>Mirror Node</b> tous les messages du topic de cette mission.", "Pour chaque événement local, elle recalcule l'empreinte et la compare à la copie sur Hedera. Elle vérifie aussi qu'aucun événement n'a disparu.", "Tout correspond : PROOF VERIFIED. Si quelqu'un avait modifié la base : « Someone changed the history! » et TAMPERING DETECTED (voir chapitre 6)."], tech: "Fichiers : <b>audit/proofService.ts</b> (verifyMissionTrail) et <b>hedera/mirror.ts</b>." }),
+    ],
+    D: [
+      S({ agent: "OPERATOR", kind: "request", text: "Rush: 500 people in Gabès need drinking water and essential medicine within 12 hours. Budget: 15,000 TND.", chips: ["REQUEST SENT"], pipe: {},
+        title: "Une demande très urgente", ex: ["Même lieu, même budget, mais seulement 12 heures. Le piège : le seul fournisseur assez rapide n'est pas vérifié."], tech: "Route : <span class='mono'>POST /api/scenarios/D_UNVERIFIED_SUPPLIER/run</span>." }),
+      S({ agent: "LEM3ALEM", kind: "status", text: "Team, we have a new mission for South Tunisia Relief Network (demo NGO): … Budget 15,000 TND, 500 people, Gabès.", chips: ["MISSION CREATED", "RELIEF NGO", "DETERMINISTIC"], pipe: { LEM3ALEM: "done" }, proof: proof("MISSION_CREATED", "Mission created"), title: "Mission créée", ex: ["Comme dans le scénario A. Preuve 1 : MISSION_CREATED."], tech: "" }),
+      common.lemWork("Gabès"),
+      S({ agent: "LEMHAF", kind: "result", text: "My pick: Sahel Express Trading (demo) — 6,810 TND, 10h delivery. [explication de Claude, avec un avertissement sur les prix]", chips: ["RECOMMENDATION", "REAL AI · claude-opus-5-5", "DEMO DATA"], pipe: { LEMHAF: "done" }, proof: proof("AI_RECOMMENDATION", "AI recommendation"),
+        title: "L'IA tombe dans le piège", ex: ["Sahel livre en 10 h et coûte deux fois moins cher. Sous pression, Claude le choisit.", "Lors de notre test réel, Claude a même signalé un risque de fraude dans ses « Concerns ». Mais il recommande quand même : c'est son rôle, il n'a pas le pouvoir de décider.", "Preuve 2 : AI_RECOMMENDATION (la mauvaise recommandation est elle aussi prouvée)."], tech: "On ne montre pas à Claude le statut « vérifié » des fournisseurs : il ne peut pas tricher en le recopiant." }),
+      common.nasWork("Sahel Express Trading (demo)"),
+      S({ agent: "NASNES", kind: "alert", text: "Stop! REJECTED: Not verified (flags: NOT_IN_REGISTRY, NO_LICENSE_EVIDENCE, NEW_COUNTERPARTY) · …", chips: ["REJECTED", "DETERMINISTIC"], checks: [["ko", "Supplier verified", "Not verified (flags: …)"], ["ko", "Evidence documents", "Missing: license"], ["rv", "Plausible pricing", "Suspiciously low: …"], ["ok", "Serves mission region", "Serves Gabès"], ["ok", "Delivery meets deadline", "10h fits the deadline"]], pipe: { NASNES: "blocked" }, proof: proof("SUPPLIER_REJECTED", "Supplier rejected", true),
+        title: "Nasnes rejette", ex: ["Le fournisseur n'est pas vérifié, il manque la licence, et les prix sont anormalement bas (moins de 40 % sous la référence).", "Résultat REJECTED. La liste ci-dessus est un extrait : sur le site, les 10 contrôles s'affichent avec ✓, ✕ ou !.", "Preuve 3 : SUPPLIER_REJECTED (en rouge dans le panneau de droite)."], tech: "" }),
+      common.gWork,
+      S({ agent: "3ASES", kind: "alert", text: "Stop! BLOCKED — NASNES result is REJECTED; payment requires VERIFIED · …", chips: ["BLOCKED", "RISK CRITICAL", "NO LLM"], pipe: { "3ASES": "blocked" }, proof: proof("GUARDIAN_BLOCKED", "Guardian blocked", true),
+        title: "3ases bloque", ex: ["Au moins une règle BLOCK : la mission est bloquée. Le risque passe automatiquement à CRITICAL.", "Aucun humain ne peut débloquer une mission BLOCKED : la validation humaine ne sert que pour les cas REVIEW.", "Preuve 4 : GUARDIAN_BLOCKED. Le refus lui-même est prouvé sur Hedera."], tech: "" }),
+      S({ agent: "KANAWITA", kind: "status", text: "I won't move a single cent. The Guardian said no, so no payment.", chips: ["NO PAYMENT"], pipe: { KANAWITA: "blocked" },
+        title: "Aucun paiement", ex: ["Kanawita n'est même pas lancé pour payer. Statut final : BLOCKED. 4 preuves au total."], tech: "" }),
+    ],
+    B: [
+      S({ agent: "OPERATOR", kind: "request", text: "500 people in Gabès need drinking water and essential medicine. We only have 300 TND available. Delivery within 48 hours.", chips: ["REQUEST SENT"], pipe: {}, title: "Un budget de 300 TND", ex: ["Même besoin que A, mais seulement 300 dinars."], tech: "" }),
+      S({ agent: "LEM3ALEM", kind: "status", text: "Team, we have a new mission for South Tunisia Relief Network (demo NGO): Emergency water and essential medicine for 500 people in Gabès with a 300 TND budget. Budget 300 TND, 500 people, Gabès.", chips: ["MISSION CREATED", "RELIEF NGO", "DETERMINISTIC"], pipe: { LEM3ALEM: "done" }, proof: proof("MISSION_CREATED", "Mission created"), title: "Mission créée", ex: ["Preuve 1."], tech: "" }),
+      common.lemWork("Gabès"),
+      S({ agent: "LEMHAF", kind: "result", text: "I found 3 offers. My pick: Oasis Medical & Water Supply (demo) — 12,450 TND, 20h delivery. …", chips: ["RECOMMENDATION", "REAL AI · claude-opus-5-5", "DEMO DATA"], pipe: { LEMHAF: "done" }, proof: proof("AI_RECOMMENDATION", "AI recommendation"), title: "Claude recommande la meilleure offre", ex: ["Le budget n'est pas le problème de Lemhaf : il recommande la meilleure offre. Preuve 2."], tech: "" }),
+      common.nasWork("Oasis Medical & Water Supply (demo)"),
+      S({ agent: "NASNES", kind: "success", text: "All good. Oasis Medical & Water Supply (demo) checks out: registry, region, items, arithmetic and evidence all verified.", chips: ["VERIFIED", "DETERMINISTIC"], pipe: { NASNES: "done" }, proof: proof("SUPPLIER_VERIFIED", "Supplier verified"), title: "Le fournisseur est bon", ex: ["Nasnes contrôle le fournisseur et l'offre, pas le budget. Tout est correct. Preuve 3."], tech: "" }),
+      common.gWork,
+      S({ agent: "3ASES", kind: "alert", text: "Stop! BLOCKED — Offer 12,450 TND exceeds budget 300 TND by 12,150 TND", chips: ["BLOCKED", "RISK CRITICAL", "NO LLM"], pipe: { "3ASES": "blocked" }, proof: proof("GUARDIAN_BLOCKED", "Guardian blocked", true), title: "La règle du budget bloque", ex: ["Règle « Within mission budget » = BLOCK. Chaque acteur a son rôle : c'est 3ases qui fait respecter l'argent disponible.", "Preuve 4 : GUARDIAN_BLOCKED."], tech: "" }),
+      S({ agent: "KANAWITA", kind: "status", text: "I won't move a single cent. The Guardian said no, so no payment.", chips: ["NO PAYMENT"], pipe: { KANAWITA: "blocked" }, title: "Aucun paiement", ex: ["L'argent ne bouge pas, et le refus est prouvé sur Hedera."], tech: "" }),
+    ],
+    E: [
+      S({ agent: "OPERATOR", kind: "request", text: "2,000 displaced people in Médenine need drinking water and essential medicine. Budget: 60,000 TND. Delivery within 72 hours.", chips: ["REQUEST SENT"], pipe: {}, title: "Une grosse mission", ex: ["2 000 personnes, 60 000 TND de budget. La meilleure offre dépassera la limite autonome de 15 000 TND."], tech: "" }),
+      S({ agent: "LEM3ALEM", kind: "status", text: "Team, we have a new mission for South Tunisia Relief Network (demo NGO): … Budget 60,000 TND, 2,000 people, Médenine.", chips: ["MISSION CREATED", "RELIEF NGO", "DETERMINISTIC"], pipe: { LEM3ALEM: "done" }, proof: proof("MISSION_CREATED", "Mission created"), title: "Mission créée", ex: ["Preuve 1."], tech: "" }),
+      common.lemWork("Médenine"),
+      S({ agent: "LEMHAF", kind: "result", text: "My pick: Oasis Medical & Water Supply (demo) — 49,800 TND, 20h delivery. …", chips: ["RECOMMENDATION", "REAL AI · claude-opus-5-5", "DEMO DATA"], pipe: { LEMHAF: "done" }, proof: proof("AI_RECOMMENDATION", "AI recommendation"), title: "Offre à 49 800 TND", ex: ["12 000 bouteilles × 1,5 TND + 200 kits × 126 TND + 4 000 sachets × 1,65 TND = 49 800 TND. Preuve 2."], tech: "" }),
+      common.nasWork("Oasis Medical & Water Supply (demo)"),
+      S({ agent: "NASNES", kind: "success", text: "All good. Oasis Medical & Water Supply (demo) checks out: registry, region, items, arithmetic and evidence all verified.", chips: ["VERIFIED", "DETERMINISTIC"], pipe: { NASNES: "done" }, proof: proof("SUPPLIER_VERIFIED", "Supplier verified"), title: "Fournisseur vérifié", ex: ["Preuve 3."], tech: "" }),
+      common.gWork,
+      S({ agent: "3ASES", kind: "alert", text: "This is above my autonomous limit. HUMAN REVIEW REQUIRED — 49,800 TND exceeds the autonomous limit 15,000 TND — a human must decide · …", chips: ["HUMAN REVIEW", "RISK HIGH", "NO LLM"], pipe: { "3ASES": "review" }, proof: proof("HUMAN_REVIEW_REQUIRED", "Human review required"), title: "3ases demande un humain", ex: ["Aucune règle BLOCK, mais la règle « Autonomous spending limit » dit REVIEW. Le risque monte à HIGH (+40 car au-dessus de la limite).", "3ases n'approuve pas et ne bloque pas : il escalade. Preuve 4 : HUMAN_REVIEW_REQUIRED.", "Il retient l'<b>input hash</b> : l'empreinte exacte des faits que l'humain va voir."], tech: "" }),
+      S({ agent: "KANAWITA", kind: "status", text: "Payment locked on Hedera: schedule 0.0.… holds 49,800 EJTND from the vault 0.0.…. My key is 1 of the 2 signatures it needs — I cannot release it alone.", chips: ["LOCKED ON HEDERA", "1 OF 2 SIGNATURES"], pipe: { KANAWITA: "review" }, proof: proof("PAYMENT_SCHEDULED", "Payment locked in vault"), title: "Kanawita bloque l'argent dans le coffre", ex: ["Au-dessus de la limite, l'argent n'est pas sur le compte des agents : il est dans un <b>coffre</b> dont la clé est une « clé à seuil » 2 sur 2 (la clé des agents + la clé d'un approbateur humain).", "Kanawita crée une <b>transaction programmée</b> (schedule) Hedera : le transfert coffre → fournisseur, déjà signé par les agents. Il manque une signature, donc rien ne bouge.", "Preuve 5 : PAYMENT_SCHEDULED, avec le numéro de la transaction programmée. Sur le site, la carte d'approbation affiche « Locked on Hedera · 1 of 2 signatures » et un lien HashScan."], tech: "Fichier : <b>agents/kanawita.ts</b> (lockInVault) → <b>hedera/sdkGateway.ts</b> : <b>ScheduleCreateTransaction</b>. Cette réservation ne change pas les faits que l'humain valide (l'input hash reste le même)." }),
+      S({ agent: "OPERATOR", kind: "op", text: "[opérateur]: APPROVED — “[ta raison]”", chips: ["HUMAN APPROVED", "DEMO OPERATOR"], pipe: {}, proof: proof("HUMAN_APPROVED", "Human approved"), title: "Tu approuves", ex: ["Avant d'accepter, l'API recalcule l'empreinte des faits. Si quelque chose a changé depuis la demande de revue : refus « STALE_REVIEW ».", "Preuve 6 : HUMAN_APPROVED, liée à l'input hash. DEMO OPERATOR rappelle que ce n'est pas un vrai système d'identité."], tech: "Route : <span class='mono'>POST /api/missions/:id/approvals</span>." }),
+      S({ agent: "3ASES", kind: "success", text: "Everything checks out. APPROVED — risk HIGH. All 12 policy checks passed (with human approval).", chips: ["APPROVED", "RISK HIGH", "NO LLM"], pipe: { "3ASES": "done" }, proof: proof("GUARDIAN_APPROVED", "Guardian approved"), title: "3ases réévalue avec l'approbation", ex: ["Avec une approbation humaine valide, les règles REVIEW passent. Preuve 7 : GUARDIAN_APPROVED."], tech: "" }),
+      S({ agent: "KANAWITA", kind: "working", text: "Approved. Adding the approver's signature to schedule 0.0.… on Hedera…", chips: ["CO-SIGNING"], pipe: { KANAWITA: "active" }, proof: proof("PAYMENT_INITIATED", "Payment initiated"), title: "La deuxième signature", ex: ["Kanawita revérifie tout (comme toujours), puis ajoute la signature de l'approbateur à la transaction programmée : <b>ScheduleSignTransaction</b>.", "Preuve 8 : PAYMENT_INITIATED."], tech: "Dans la démo, la clé de l'approbateur est gardée par notre serveur et utilisée seulement après opérateur + PIN. En vrai, elle serait dans le portefeuille de l'approbateur." }),
+      S({ agent: "KANAWITA", kind: "success", text: "Payment released ✅ The approver co-signed and Hedera executed schedule 0.0.…: 49,800 EJTND paid from the vault. Receipt: SUCCESS.", chips: ["PAID", "CO-SIGNED ON HEDERA"], pipe: { KANAWITA: "done" }, proof: proof("PAYMENT_CONFIRMED", "Payment confirmed"), title: "Hedera exécute le paiement", ex: ["Avec 2 signatures sur 2, c'est <b>Hedera lui-même</b> qui exécute le transfert, dans le même tour de consensus.", "Preuve 9 : PAYMENT_CONFIRMED (« 2 of 2 »). Sur HashScan, la transaction programmée apparaît « executed » avec 2 signatures.", "Si l'opérateur avait refusé : la transaction programmée est supprimée (preuve PAYMENT_CANCELLED) et l'argent ne quitte jamais le coffre."], tech: "Même quelqu'un qui volerait la clé de notre serveur ne pourrait pas vider le coffre : il lui manquerait la clé de l'approbateur." }),
+    ],
+    I: [
+      S({ agent: "OPERATOR", kind: "request", text: "ACME Tunisia: 12 laptops and 12 monitors for the new engineering team in Tunis. Budget: 45,000 TND. Delivery within 7 days.", chips: ["REQUEST SENT"], pipe: {}, title: "Une entreprise, pas une ONG", ex: ["Même application, même agents, mais une autre organisation : ACME Tunisia (fictive), qui équipe une nouvelle équipe.", "La demande cite « ACME » : la mission est rattachée à ACME, donc à <b>sa</b> politique de dépenses."], tech: "Route : <span class='mono'>POST /api/scenarios/I_ACME_LAPTOPS/run</span>." }),
+      S({ agent: "LEM3ALEM", kind: "status", text: "Team, we have a new mission for ACME Tunisia (demo company): Laptops and monitors for ACME Tunisia's new engineering team (12 employees). Budget 45,000 TND, 12 employees, Tunis.", chips: ["MISSION CREATED", "ACME", "DETERMINISTIC"], pipe: { LEM3ALEM: "done" }, proof: proof("MISSION_CREATED", "Mission created"), title: "Mission créée pour ACME", ex: ["Les personnes s'appellent ici « employees » au lieu de « people ».", "Preuve 1 : MISSION_CREATED, avec la politique d'ACME (version 1.1.0) dans la preuve."], tech: "Fichier : <b>agents/guardian/policy.acme.json</b> : limite autonome 6 000 TND, plafond 150 000 TND, catégories ELECTRONICS et OFFICE, villes Tunis, Sousse, Sfax." }),
+      common.lemWork("Tunis"),
+      S({ agent: "LEMHAF", kind: "result", text: "I found 2 offers. My pick: Carthage IT Distribution (demo) — 35,460 TND, 48h delivery. …", chips: ["RECOMMENDATION", "REAL AI · claude-opus-5-5", "DEMO DATA"], pipe: { LEMHAF: "done" }, proof: proof("AI_RECOMMENDATION", "AI recommendation"), title: "Claude recommande Carthage IT", ex: ["12 ordinateurs × 2 460 TND + 12 écrans × 495 TND = 35 460 TND. L'autre offre (Sousse Office Pro) coûte 36 684 TND.", "Preuve 2."], tech: "" }),
+      common.nasWork("Carthage IT Distribution (demo)"),
+      S({ agent: "NASNES", kind: "success", text: "All good. Carthage IT Distribution (demo) checks out: registry, region, items, arithmetic and evidence all verified.", chips: ["VERIFIED", "DETERMINISTIC"], pipe: { NASNES: "done" }, proof: proof("SUPPLIER_VERIFIED", "Supplier verified"), title: "Fournisseur vérifié", ex: ["Les mêmes 10 contrôles que pour l'ONG. Preuve 3."], tech: "" }),
+      S({ agent: "3ASES", kind: "working", text: "Rules are rules. Applying policy 1.1.0+… — deterministic rules, no AI.", chips: ["EVALUATING"], pipe: { NASNES: "done", "3ASES": "active" }, title: "3ases applique les règles d'ACME", ex: ["Même code, autre fichier de règles : la version affichée est 1.1.0 (celle d'ACME), pas 2.1.0 (celle de l'ONG)."], tech: "Fichier : <b>agents/guardian/policy.ts</b> (PolicyRegistry : une politique par organisation)." }),
+      S({ agent: "3ASES", kind: "alert", text: "This is above my autonomous limit. HUMAN REVIEW REQUIRED — Autonomous spending limit: 35,460 TND exceeds the autonomous limit 6,000 TND — a human must decide · …", chips: ["HUMAN REVIEW", "RISK HIGH", "NO LLM"], pipe: { "3ASES": "review" }, proof: proof("HUMAN_REVIEW_REQUIRED", "Human review required"), title: "Au-dessus de la limite d'ACME", ex: ["35 460 TND dépasse la limite de 6 000 TND d'ACME. Pour l'ONG, la limite serait 15 000 TND.", "Preuve 4."], tech: "" }),
+      S({ agent: "KANAWITA", kind: "status", text: "Payment locked on Hedera: schedule 0.0.… holds 35,460 EJTND from the vault 0.0.…. My key is 1 of the 2 signatures it needs — I cannot release it alone.", chips: ["LOCKED ON HEDERA", "1 OF 2 SIGNATURES"], pipe: { KANAWITA: "review" }, proof: proof("PAYMENT_SCHEDULED", "Payment locked in vault"), title: "Bloqué dans le coffre", ex: ["Exactement le même mécanisme que pour l'ONG (scénario E) : une transaction programmée qui attend la signature humaine. Preuve 5."], tech: "" }),
+      S({ agent: "OPERATOR", kind: "op", text: "ops-lead: APPROVED — “Budget line ENG-2026 approved by finance”", chips: ["HUMAN APPROVED", "DEMO OPERATOR"], pipe: {}, proof: proof("HUMAN_APPROVED", "Human approved"), title: "L'approbation", ex: ["Raison + PIN. Preuve 6."], tech: "" }),
+      S({ agent: "KANAWITA", kind: "success", text: "Payment released ✅ The approver co-signed and Hedera executed schedule 0.0.…: 35,460 EJTND paid from the vault. Receipt: SUCCESS.", chips: ["PAID", "CO-SIGNED ON HEDERA"], pipe: { "3ASES": "done", KANAWITA: "done" }, proof: proof("PAYMENT_CONFIRMED", "Payment confirmed"), extraProof: proof("PAYMENT_INITIATED", "Payment initiated"), title: "Payé par Hedera", ex: ["Avant ce message, tu vois aussi 3ases qui réévalue (APPROVED) et « Approved. Adding the approver's signature… ».", "Total : 9 preuves, sur le même topic Hedera que les missions de l'ONG."], tech: "C'est ce qui fait d'EL JOKER une plateforme : ajouter une organisation, c'est ajouter un fichier de règles." }),
+    ],
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const chat = $("chat"), explain = $("explain"), proofsBox = $("proofs"), pipeBox = $("pipe"), countEl = $("count");
+  let sc = "A", i = 0, timer = null;
+
+  function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+
+  function renderMsg(st, isCurrent) {
+    const a = AG[st.agent];
+    const op = st.agent === "OPERATOR";
+    const kindCls = st.kind === "working" ? "working" : st.kind === "alert" ? "alert" : st.kind === "success" ? "success" : st.kind === "proofk" ? "proofk" : "";
+    const checks = st.checks ? "<ul class='checks'>" + st.checks.map((c) => "<li><span class='" + c[0] + "'>" + (c[0] === "ok" ? "✓" : c[0] === "ko" ? "✕" : "!") + "</span><span><b>" + esc(c[1]) + "</b> — " + esc(c[2]) + "</span></li>").join("") + "</ul>" : "";
+    const det = st.details ? "<div class='muted' style='font-size:.8rem;margin-top:.3rem'>" + esc(st.details) + "</div>" : "";
+    const chips = st.chips.length ? "<div class='chips'>" + st.chips.map((c) => "<span class='chip " + chipClass(c) + "'>" + esc(c) + "</span>").join("") + "</div>" : "";
+    return "<div class='msg" + (op ? " op" : "") + (isCurrent ? " current" : "") + "'><div class='av' style='background:" + a.color + ";font-size:" + (op ? ".7rem" : ".95rem") + "'>" + a.init + "</div><div class='bubble'><div class='bname' style='color:" + a.color + "'>" + a.name + (a.role ? "<span>" + a.role + "</span>" : "") + "</div><div class='btext " + kindCls + "'>" + esc(st.text) + checks + det + chips + "</div></div></div>";
+  }
+
+  function render() {
+    const steps = SC[sc];
+    countEl.textContent = (i) + " / " + steps.length;
+    $("prev").disabled = i === 0;
+    $("next").disabled = i === steps.length;
+    // chat
+    chat.innerHTML = i === 0 ? "<p class='empty'>La conversation est vide. Clique sur « Suivant » pour envoyer la demande.</p>" : steps.slice(0, i).map((s, k) => renderMsg(s, k === i - 1)).join("");
+    chat.scrollTop = chat.scrollHeight;
+    // pipeline
+    const ps = {};
+    steps.slice(0, i).forEach((s) => Object.assign(ps, s.pipe || {}));
+    const sym = { active: "…", done: "✓", blocked: "✕", review: "!" };
+    pipeBox.innerHTML = PIPE.map((p) => "<span class='p " + (ps[p] || "") + "'>" + AG[p].name + (ps[p] ? " <i>" + sym[ps[p]] + "</i>" : "") + "</span>").join("<span class='sep'>›</span>") + "<span class='sep'>›</span><span class='p'>Hedera <i>" + countProofs(steps, i, true) + " ancrées</i></span>";
+    // proofs
+    const list = [];
+    steps.slice(0, i).forEach((s) => { if (s.extraProof) list.push(s.extraProof); if (s.proof) list.push(s.proof); });
+    const lastStepProofs = i > 0 ? ((steps[i - 1].extraProof ? 1 : 0) + (steps[i - 1].proof ? 1 : 0)) : 0;
+    proofsBox.innerHTML = list.length === 0 ? "<p class='empty'>Waiting for the first decision…</p>" : list.map((p, k) => {
+      const pending = k >= list.length - lastStepProofs;
+      return "<div class='proof" + (p.bad ? " bad" : "") + "'><div class='row'><b>" + esc(p.label) + "</b>" + (pending ? "<span class='pending'>● consensus…</span>" : "<span class='chip g'>on Hedera</span>") + "</div><div class='meta'>" + esc(AGName(steps, p)) + (pending ? "" : " · seq #" + (k + 1)) + " · sha256 " + fakeHash(sc + p.type) + "… " + (pending ? "" : "· HashScan") + "</div></div>";
+    }).join("");
+    // explanation
+    if (i === 0) {
+      explain.innerHTML = "<p class='who' style='color:var(--gold)'>Avant de commencer</p><h3>Le site attend ta demande</h3><p>Sur le vrai site, le champ de saisie est pré-rempli avec le texte du scénario. Les puces « Scenario A: … » au-dessus changent ce texte.</p><p class='muted'>Chaque étape de ce simulateur correspond à un message qui apparaît vraiment sur le site.</p>";
+    } else {
+      const s = steps[i - 1];
+      const a = AG[s.agent];
+      explain.innerHTML = "<p class='who' style='color:" + a.color + "'>" + (s.bonus ? "Bonus · " : "Étape " + i + " · ") + (s.agent === "OPERATOR" ? "Toi (opérateur)" : a.name) + "</p><h3>" + s.title + "</h3><ul>" + s.ex.map((x) => "<li>" + x + "</li>").join("") + "</ul>" + (s.tech ? "<div class='tech'>" + s.tech + "</div>" : "");
+    }
+  }
+  function countProofs(steps, n, anchoredOnly) {
+    let c = 0; steps.slice(0, n).forEach((s) => { c += (s.proof ? 1 : 0) + (s.extraProof ? 1 : 0); });
+    if (anchoredOnly && n > 0) c -= (steps[n - 1].proof ? 1 : 0) + (steps[n - 1].extraProof ? 1 : 0);
+    return Math.max(0, c);
+  }
+  function AGName(steps, p) {
+    const map = { MISSION_CREATED: "Lem3alem", AI_RECOMMENDATION: "Lemhaf", SUPPLIER_VERIFIED: "Nasnes", SUPPLIER_REJECTED: "Nasnes", GUARDIAN_APPROVED: "3ases", GUARDIAN_BLOCKED: "3ases", HUMAN_REVIEW_REQUIRED: "3ases", HUMAN_APPROVED: "Operator", PAYMENT_SCHEDULED: "Kanawita", PAYMENT_INITIATED: "Kanawita", PAYMENT_CONFIRMED: "Kanawita" };
+    return map[p.type] || "";
+  }
+  function fakeHash(seed) { let h = 2166136261; for (const ch of seed) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16).padStart(8, "0") + ((h >>> 0) ^ 0x5bd1e995).toString(16).slice(0, 4); }
+
+  function stop() { if (timer) { clearInterval(timer); timer = null; $("play").textContent = "Lecture auto"; } }
+  $("next").addEventListener("click", () => { stop(); if (i < SC[sc].length) { i++; render(); } });
+  $("prev").addEventListener("click", () => { stop(); if (i > 0) { i--; render(); } });
+  $("reset").addEventListener("click", () => { stop(); i = 0; render(); });
+  $("play").addEventListener("click", () => {
+    if (timer) return stop();
+    if (i >= SC[sc].length) i = 0;
+    $("play").textContent = "Pause";
+    timer = setInterval(() => { if (i < SC[sc].length) { i++; render(); } else stop(); }, 3200);
+    i++; render();
+  });
+  document.querySelectorAll("[data-sc]").forEach((b) => b.addEventListener("click", () => {
+    stop(); sc = b.dataset.sc; i = 0;
+    document.querySelectorAll("[data-sc]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+  render();
+
+  /* ---------- glossary ---------- */
+  const GL = [
+    ["AI · claude-opus-5-5", "Barre du haut", "Claude est configuré : les recommandations sont faites par la vraie IA."],
+    ["AI · fallback", "Barre du haut", "Pas de clé Anthropic : le classement se fait par règles simples. Tout le reste marche pareil."],
+    ["HCS · 0.0.11007004", "Panneau des preuves", "Le mode réel est actif : les preuves vont sur notre topic Hedera numéro 0.0.11007004 (testnet)."],
+    ["Vault 2-of-2 · 0.0.…", "Barre du haut", "Le coffre est configuré : au-dessus de la limite, l'argent ne sort qu'avec la signature humaine."],
+    ["Pays in EJTND (HTS)", "Barre du haut", "Les paiements se font avec le jeton EJTND, notre dinar de test (montant complet). « Pays in HBAR (scaled) » = montant réduit en HBAR."],
+    ["Public verifier", "Barre du haut", "Ouvre la page /verify : ton navigateur vérifie une mission tout seul, en lisant Hedera."],
+    ["RELIEF NGO / ACME", "Lem3alem, en-tête", "L'organisation pour qui la mission est faite, donc les règles qui s'appliquent."],
+    ["LOCKED ON HEDERA", "Kanawita", "Le paiement est bloqué dans le coffre comme transaction programmée Hedera. Il attend la signature humaine."],
+    ["LOCKED · SIMULATED", "Kanawita", "Même chose avec le faux registre local (mode sans identifiants)."],
+    ["1 OF 2 SIGNATURES", "Kanawita, carte", "Les agents ont signé (1 sur 2). Il manque la signature de l'approbateur humain."],
+    ["CO-SIGNING", "Kanawita", "L'approbateur signe la transaction programmée."],
+    ["CO-SIGNED ON HEDERA", "Kanawita", "Les 2 signatures sont là : Hedera a exécuté le transfert lui-même."],
+    ["SCHEDULE DELETED", "Kanawita", "L'opérateur a refusé : la transaction programmée est supprimée. L'argent ne quitte pas le coffre."],
+    ["NEVER CO-SIGNED", "Kanawita", "La suppression a échoué, mais sans la deuxième signature la transaction ne peut jamais s'exécuter, et elle expire."],
+    ["VAULT LOCK FAILED", "Kanawita", "Hedera a refusé de créer la transaction programmée. Rien n'a bougé ; on réessaiera au moment de l'approbation."],
+    ["Locked in vault", "Carte Payment", "Le paiement attend dans le coffre (1 signature sur 2)."],
+    ["Payment locked in vault / Vault schedule deleted", "Panneau des preuves", "Les preuves PAYMENT_SCHEDULED et PAYMENT_CANCELLED."],
+    ["Simulated ledger", "Panneau des preuves", "Pas d'identifiants Hedera : un faux registre local remplace Hedera. Pas de lien HashScan."],
+    ["REQUEST SENT", "Ton message", "Ta demande a été reçue par l'API et ouvre la conversation."],
+    ["MISSION CREATED", "Lem3alem", "La demande est complète, la mission est créée. Première preuve envoyée vers Hedera."],
+    ["NEEDS INFORMATION", "Lem3alem", "Il manque une info critique (lieu, budget…). Lem3alem refuse de deviner et liste ce qui manque."],
+    ["DETERMINISTIC", "Plusieurs agents", "Ce résultat vient de code fixe, sans IA : mêmes données = même résultat, toujours."],
+    ["REAL AI · claude-opus-5-5", "Lem3alem, Lemhaf", "Ce résultat vient vraiment de Claude."],
+    ["FALLBACK · rule-based", "Lem3alem, Lemhaf", "Claude n'a pas répondu (ou pas configuré) : classement par règles simples. La raison est indiquée."],
+    ["DEMO DATA", "Lemhaf", "Les fournisseurs et offres sont fictifs (marqués « demo »)."],
+    ["AI ANALYZING", "Lemhaf", "Lemhaf attend la réponse de Claude (environ 10 secondes)."],
+    ["RECOMMENDATION", "Lemhaf", "La recommandation est prête. Le détail (Ranking of N offers) se déplie en cliquant."],
+    ["Concerns", "Détail de Lemhaf", "Les inquiétudes que Claude signale lui-même (prix bizarre, délai serré…)."],
+    ["NO OFFERS", "Lemhaf", "Aucun fournisseur de démo ne livre cette région pour ces articles : mission bloquée."],
+    ["VERIFYING", "Nasnes", "Nasnes est en train de faire ses 10 contrôles."],
+    ["VERIFIED", "Nasnes", "Les 10 contrôles sont passés."],
+    ["NEEDS REVIEW", "Nasnes", "Un contrôle « REVIEW » a échoué (affirmation de l'IA, prix suspect, délai) : pas de paiement sans revue."],
+    ["REJECTED", "Nasnes", "Un contrôle bloquant a échoué (fournisseur, région, articles, calcul, documents, facture)."],
+    ["✓  ✕  !", "Listes de contrôles", "✓ réussi, ✕ échec bloquant, ! demande une revue humaine."],
+    ["EVALUATING", "3ases", "3ases applique les règles de policy.json."],
+    ["APPROVED", "3ases", "Toutes les règles sont PASS (ou REVIEW couvertes par une approbation humaine valide)."],
+    ["BLOCKED", "3ases", "Au moins une règle BLOCK. Aucun humain ne peut passer outre."],
+    ["HUMAN REVIEW", "3ases", "Pas de blocage, mais au moins une règle REVIEW (au-dessus de la limite, 15 000 TND pour l'ONG, ou risque HIGH) : un humain doit décider."],
+    ["RISK LOW / MEDIUM / HIGH / CRITICAL", "3ases", "Niveau de risque calculé par points. Score < 20 LOW, ≥ 20 MEDIUM, ≥ 40 HIGH, ≥ 70 CRITICAL. Une mission bloquée est CRITICAL."],
+    ["NO LLM", "3ases", "Rappel : 3ases n'utilise aucun modèle de langage (aucune IA)."],
+    ["Policy 2.1.0+… · input hash", "Sous le message de 3ases", "Version des règles (avec l'empreinte du fichier) et empreinte des faits évalués."],
+    ["CHECKING AUTHORIZATION", "Kanawita", "Kanawita revérifie tout lui-même avant de payer."],
+    ["PAYING", "Kanawita", "La transaction Hedera est envoyée, on attend le reçu."],
+    ["PAID", "Kanawita", "Reçu Hedera SUCCESS : le paiement est confirmé sur le testnet."],
+    ["PAID · SIMULATED", "Kanawita", "Mode simulé : aucun argent n'a bougé."],
+    ["View on HashScan", "Message de paiement", "Ouvre la transaction sur HashScan, l'explorateur public de Hedera."],
+    ["Mirror Node confirmed", "Message de paiement", "On a relu la transaction sur le Mirror Node : elle existe bien et a réussi."],
+    ["NO PAYMENT", "Kanawita", "3ases a dit non : aucun paiement, Kanawita ne bouge pas."],
+    ["PAYMENT ON HOLD", "Kanawita", "Le paiement attend la décision d'un opérateur."],
+    ["PAYMENT REFUSED", "Kanawita", "Une condition manque au moment de payer (la liste des raisons est affichée)."],
+    ["DUPLICATE BLOCKED", "Kanawita", "Quelqu'un a renvoyé le même paiement : refusé (HTTP 409). Toujours un seul paiement."],
+    ["PAYMENT FAILED", "Kanawita", "Hedera n'a pas confirmé : rien n'est marqué comme payé."],
+    ["HUMAN APPROVED / HUMAN REJECTED", "Ton message", "Ta décision sur la carte d'approbation, enregistrée et prouvée."],
+    ["DEMO OPERATOR", "Ton message", "Le système d'opérateur est une démo (PIN), pas une vraie identité."],
+    ["PROOF VERIFIED", "Nasnes", "Après « Verify against Hedera » : la base locale correspond exactement aux preuves sur Hedera."],
+    ["TAMPERING DETECTED", "Nasnes", "La base locale ne correspond plus à Hedera : quelqu'un a modifié ou effacé l'historique. L'alerte est elle-même prouvée."],
+    ["SIMULATED TAMPERING", "System", "Tu as cliqué un bouton d'attaque de démo : la base a été modifiée exprès."],
+    ["ERROR", "System", "Erreur technique dans le pipeline. Aucun paiement n'a été fait."],
+    ["consensus…", "Panneau des preuves", "La preuve est partie vers Hedera, on attend le consensus (quelques secondes)."],
+    ["on Hedera", "Panneau des preuves", "La preuve est ancrée : Hedera l'a acceptée et horodatée."],
+    ["simulated", "Panneau des preuves", "Preuve enregistrée dans le faux registre local (mode sans identifiants)."],
+    ["seq #12", "Panneau des preuves", "Numéro d'ordre du message dans notre topic Hedera (toutes missions confondues)."],
+    ["sha256 a3f9…", "Panneau des preuves", "Le début de l'empreinte de la preuve complète (champ h du message Hedera)."],
+    ["HashScan (preuve)", "Panneau des preuves", "Ouvre ce message précis du topic sur HashScan."],
+    ["Mission created … Payment confirmed", "Panneau des preuves", "Le type d'événement prouvé. En rouge : Blocked, Rejected, Failed, Tampering."],
+  ];
+  const glBody = $("gl-body"), glN = $("gl-n");
+  function renderGl(q) {
+    const t = q.trim().toLowerCase();
+    const rows = GL.filter((r) => !t || r.join(" ").toLowerCase().includes(t));
+    glBody.innerHTML = rows.map((r) => "<tr><td><span class='chip " + chipClass(r[0]) + "'>" + esc(r[0]) + "</span></td><td class='muted'>" + esc(r[1]) + "</td><td>" + esc(r[2]) + "</td></tr>").join("") || "<tr><td colspan='3' class='muted'>Aucun résultat.</td></tr>";
+    glN.textContent = rows.length + " / " + GL.length;
+  }
+  $("gl-search").addEventListener("input", (e) => renderGl(e.target.value));
+  renderGl("");
+
+  /* ---------- architecture ---------- */
+  const AR = {
+    browser: ["Navigateur", "Ce que tu vois. Il ne contient aucune clé secrète.", ["Affiche la page envoyée par Next.js.", "Envoie tes actions (Envoyer, Approve, Verify…) à <span class='mono'>/api/…</span> sur le même site.", "Redemande l'état de la mission toutes les 0,8 s pendant le travail, 3 s sinon. Le serveur répond « rien de nouveau » (304) si rien n'a changé."]],
+    web: ["Site Next.js (apps/web)", "L'interface : landing, conversation, panneaux de preuves.", ["<b>Next.js 16</b> + <b>React 19</b> pour les composants, <b>Tailwind CSS 4</b> pour le style.", "Un « proxy » envoie tout ce qui commence par /api vers l'API sur le port 4000 (fichier <span class='mono'>next.config.ts</span>).", "Composants clés : <span class='mono'>ConversationPanel</span>, <span class='mono'>ChatFeed</span> (messages), <span class='mono'>ProofFeed</span> (preuves), <span class='mono'>PipelineStrip</span> (les 5 agents en haut), <span class='mono'>ApprovalCard</span> (PIN), <span class='mono'>ProofVerify</span> (attaques + vérification).", "La logique de récupération est dans <span class='mono'>lib/useMissionControl.ts</span>."]],
+    api: ["API Express (apps/api)", "Le cerveau : c'est lui qui a les clés et qui parle à Claude et à Hedera.", ["<b>Express 5</b> sur Node.js 22+, en TypeScript.", "Routes principales : créer une mission, lancer un scénario, lire l'état, approuver, rejouer un paiement, vérifier, simuler une attaque (fichier <span class='mono'>app.ts</span>).", "Lit les secrets dans <span class='mono'>.env</span> (clé Hedera, clé Anthropic). Le journal masque les valeurs qui ressemblent à des clés."]],
+    agents: ["Les 5 agents", "Le pipeline lancé pour chaque mission.", ["<span class='mono'>orchestrator/missionService.ts</span> enchaîne : Lem3alem → Lemhaf → Nasnes → 3ases → (humain) → Kanawita.", "Chaque agent est un fichier dans <span class='mono'>agents/</span>.", "Chaque étape écrit un message de conversation (pour toi) et, si elle est importante, une preuve (pour Hedera)."]],
+    guardian: ["3ases et policy.json", "Les règles de dépense, versionnées.", ["Une politique par organisation : <span class='mono'>policy.json</span> pour l'ONG (2.1.0, limite 15 000 TND) et <span class='mono'>policy.acme.json</span> pour ACME (1.1.0, limite 6 000 TND). Régions, catégories, plafonds, seuils de prix, poids du risque.", "<span class='mono'>agents/guardian/engine.ts</span> : la fonction <b>evaluate</b>, 13 règles, sans IA. 20 tests unitaires la vérifient.", "La version effective est « 2.1.0+empreinte du fichier »."]],
+    proof: ["Service de preuves", "Transforme chaque décision en preuve chaînée et l'envoie à Hedera.", ["<span class='mono'>audit/proofService.ts</span> : JSON canonique → empreinte SHA-256 → maillon de chaîne (empreinte précédente) → message HCS.", "Une file d'attente par mission envoie les messages dans l'ordre, avec une nouvelle tentative si besoin.", "Vérification : relit le topic sur le Mirror Node et compare tout (événements modifiés, effacés, métadonnées changées)."]],
+    shared: ["Schémas partagés (packages/shared)", "Le « contrat » commun entre le site et l'API.", ["Écrits avec <b>Zod</b> : une mission, une offre, une décision… ont une forme précise, vérifiée à l'exécution.", "Le site et l'API utilisent les mêmes types : si l'un change, TypeScript signale l'erreur dans l'autre."]],
+    db: ["SQLite (node:sqlite)", "La base de données locale, dans un fichier.", ["Intégrée à Node.js (module <span class='mono'>node:sqlite</span>), aucun serveur à installer.", "Tables : missions, offres, recommandations, vérifications, décisions, approbations, paiements, événements de preuve, messages.", "Des contraintes uniques empêchent deux paiements pour la même mission, la même facture ou la même clé d'idempotence.", "Code : <span class='mono'>db/store.ts</span>. C'est cette base qu'un « initié » pourrait modifier : d'où Hedera."]],
+    claude: ["API Claude (Anthropic)", "L'IA, appelée par internet.", ["SDK <span class='mono'>@anthropic-ai/sdk</span>, modèle <span class='mono'>claude-opus-5-5</span>, effort « low » pour aller vite, 45 s maximum, 1 nouvelle tentative.", "Réponse au format JSON imposé (schéma Zod).", "Utilisée par Lemhaf (classement) et par Lem3alem (texte libre seulement)."]],
+    hnodes: ["Nœuds Hedera (testnet)", "Là où on écrit : preuves, paiements, coffre.", ["SDK <span class='mono'>@hashgraph/sdk</span>, connexion gRPC (port 50211).", "<b>TopicMessageSubmitTransaction</b> : envoyer une preuve au topic 0.0.11007004.", "<b>TransferTransaction</b> : payer en EJTND (jeton HTS) ou en HBAR le compte du fournisseur de démo.", "<b>ScheduleCreate / ScheduleSign / ScheduleDelete</b> : préparer, co-signer ou annuler un paiement depuis le coffre 2 sur 2.", "<b>TransactionReceiptQuery</b> : lire le reçu (SUCCESS).", "Clé des agents (compte 0.0.10569347) et clé de l'approbateur : dans .env, jamais affichées.", "Code : <span class='mono'>hedera/sdkGateway.ts</span>. Mise en place : <span class='mono'>npm run hedera:setup -- --vault --stablecoin</span>."]],
+    verifier: ["Vérificateur public (/verify)", "Une page qui vérifie une mission sans faire confiance à notre serveur.", ["Elle télécharge ce que le serveur affirme (<span class='mono'>GET /api/public/missions/:id/bundle</span>) : chaque événement avec sa preuve complète.", "Elle lit les preuves <b>directement sur le Mirror Node</b> de Hedera, depuis ton navigateur.", "Elle recalcule chaque SHA-256 avec Web Crypto, vérifie la chaîne et compare avec Hedera. Elle vérifie aussi les paiements et le coffre.", "Résultat : VERIFIED ON HEDERA, ou TAMPERING DETECTED si quelqu'un (même nous) a modifié ou effacé l'historique.", "Code : <span class='mono'>packages/shared/src/proof.ts</span> (verifyBundle) et <span class='mono'>apps/web/components/PublicVerifier.tsx</span>."]],
+    mirror: ["Mirror Node (testnet)", "Là où on lit l'historique, gratuitement.", ["API web publique (REST) de Hedera : <span class='mono'>testnet.mirrornode.hedera.com</span>.", "On y relit les messages du topic (pour Verify against Hedera) et les transactions (Mirror Node confirmed).", "HashScan, le site public, est construit sur ces mêmes données : n'importe qui peut vérifier sans nous.", "Code : <span class='mono'>hedera/mirror.ts</span>."]],
+  };
+  const archDetail = $("arch-detail");
+  function showArch(k) {
+    const d = AR[k];
+    archDetail.innerHTML = "<p class='eyebrow'>Détail</p><h3>" + d[0] + "</h3><p>" + d[1] + "</p><ul>" + d[2].map((x) => "<li>" + x + "</li>").join("") + "</ul>";
+    document.querySelectorAll(".node").forEach((n) => n.setAttribute("aria-pressed", String(n.dataset.n === k)));
+  }
+  document.querySelectorAll(".node").forEach((n) => n.addEventListener("click", () => showArch(n.dataset.n)));
+  showArch("api");
+
+  /* ---------- hedera concepts ---------- */
+  const HC = [
+    ["Compte (0.0.x)", true, "Une identité sur Hedera, notée shard.realm.numéro. Notre compte opérateur est 0.0.10569347 ; le fournisseur de démo a aussi son compte."],
+    ["Clé privée et signature", true, "Chaque transaction est signée avec la clé privée du compte. Elle reste dans .env et ne doit jamais être partagée."],
+    ["HBAR (ℏ)", true, "La monnaie de Hedera. Elle paie les frais et sert à nos paiements de démo (montants réduits)."],
+    ["Transaction et frais", true, "Une action envoyée au réseau (payer, envoyer un message…). Les frais sont fixés en dollars et très faibles."],
+    ["Consensus et finalité", true, "Les nœuds se mettent d'accord sur l'ordre en quelques secondes. Après, c'est définitif."],
+    ["Reçu (receipt)", true, "La réponse du réseau après consensus : SUCCESS ou une erreur. Kanawita ne marque PAID qu'avec SUCCESS."],
+    ["Testnet / mainnet", true, "Testnet = argent de test gratuit (portal.hedera.com). Mainnet = vrai argent. Nous : testnet uniquement."],
+    ["HCS · Consensus Service", true, "Le service qui reçoit des messages et leur donne un ordre et une heure officiels. C'est notre « notaire » : une preuve par décision."],
+    ["Topic", true, "Un fil de messages HCS. Le nôtre : 0.0.11007004. Seul notre compte peut y écrire (clé de soumission)."],
+    ["Numéro de séquence", true, "Chaque message du topic reçoit un numéro (seq #) et un horodatage de consensus. Impossible d'en insérer un au milieu."],
+    ["Mirror Node", true, "Des serveurs qui gardent tout l'historique et le donnent par une API web gratuite. On s'en sert pour vérifier."],
+    ["HashScan", true, "Le site public pour explorer Hedera : transactions, comptes, topics. Le jury peut y voir nos preuves et notre paiement."],
+    ["Transactions programmées", true, "Une transaction préparée à l'avance qui attend les signatures manquantes. C'est notre coffre : le paiement attend la signature humaine, puis Hedera l'exécute tout seul."],
+    ["Clé à seuil (2 sur 2)", true, "Une clé faite de plusieurs clés, avec un nombre minimum de signatures. Le coffre exige la clé des agents ET celle de l'approbateur."],
+    ["HTS · Token Service", true, "Créer ses propres jetons. Nous avons créé EJTND, un dinar de test (1 EJTND = 1 dinar, offre fixe, pas de clé admin), pour payer le montant complet. En vrai : un partenaire agréé, car le dinar ne circule pas librement hors de Tunisie."],
+    ["Smart contracts", false, "Des programmes qui tournent sur Hedera (compatibles Ethereum). Pas utilisés : nos règles tournent dans notre API."],
+    ["File Service", false, "Stocker des fichiers sur Hedera. Pas utilisé : nos documents restent hors chaîne, seule leur empreinte est publiée."],
+  ];
+  $("hconcepts").innerHTML = HC.map((c) => "<div class='card'><h3 style='justify-content:space-between'>" + c[0] + "<span class='tag " + (c[1] ? "used" : "notused") + "'>" + (c[1] ? "utilisé" : "pas utilisé") + "</span></h3><p>" + c[2] + "</p></div>").join("");
+
+  /* ---------- hash lab ---------- */
+  const enc = new TextEncoder();
+  async function sha(s) {
+    try { const b = await crypto.subtle.digest("SHA-256", enc.encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+    catch { return "(calcul indisponible dans ce navigateur)"; }
+  }
+  const hin = $("hash-in"), hout = $("hash-out");
+  async function upd() { hout.textContent = await sha(hin.value); }
+  hin.addEventListener("input", upd); upd();
+
+  const BASE = [
+    { t: "MISSION_CREATED", d: "Gabès · 500 personnes · budget 5000" },
+    { t: "AI_RECOMMENDATION", d: "Oasis · 12450 TND" },
+    { t: "GUARDIAN_APPROVED", d: "approuvé · offre 12450 TND" },
+    { t: "PAYMENT_CONFIRMED", d: "12450 EJTND · SUCCESS" },
+  ];
+  let local = [], ledger = [];
+  async function buildChain(evts) {
+    const out = []; let prev = "0".repeat(64);
+    for (const e of evts) { const h = await sha(e.d); const eh = await sha(e.t + "|" + h + "|" + prev); out.push({ ...e, h, ph: prev, eh }); prev = eh; }
+    return out;
+  }
+  const chainEl = $("chain"), verdict = $("verdict");
+  function drawChain(broken) {
+    chainEl.innerHTML = local.map((e, k) => "<div class='block" + (broken && broken.has(k) ? " broken" : "") + "'><div class='bh'><b>" + (k + 1) + ". " + e.t + "</b><span class='muted'>" + esc(e.d) + "</span></div><div class='meta'>h " + e.h.slice(0, 16) + "… · précédent " + e.ph.slice(0, 10) + "… · eh " + e.eh.slice(0, 10) + "…</div></div>").join("") || "<p class='empty'>Plus aucun événement.</p>";
+  }
+  async function resetChain() { local = await buildChain(BASE); ledger = local.map((e) => ({ ...e })); verdict.hidden = true; drawChain(); }
+  $("t-reset").addEventListener("click", resetChain);
+  $("t-edit").addEventListener("click", async () => { await ensure(); local[2] = { ...local[2], d: "approuvé · offre 27450 TND" }; local[2].h = await sha(local[2].d); verdict.hidden = true; drawChain(); });
+  $("t-rewrite").addEventListener("click", async () => { await ensure(); const ev = local.map((e) => ({ t: e.t, d: e.d })); ev[2] = { ...ev[2], d: "approuvé · offre 27450 TND" }; local = await buildChain(ev); verdict.hidden = true; drawChain(); });
+  $("t-delete").addEventListener("click", async () => { await ensure(); if (local.length) local = local.slice(0, -1); verdict.hidden = true; drawChain(); });
+  async function ensure() { if (!local.length && !ledger.length) await resetChain(); }
+  $("v-local").addEventListener("click", async () => {
+    const bad = new Set(); let prev = "0".repeat(64);
+    for (let k = 0; k < local.length; k++) { const e = local[k]; const h = await sha(e.d); const eh = await sha(e.t + "|" + h + "|" + prev); if (h !== e.h || eh !== e.eh || e.ph !== prev) bad.add(k); prev = e.eh; }
+    drawChain(bad);
+    verdict.hidden = false;
+    verdict.className = "verdict " + (bad.size ? "bad" : "ok");
+    verdict.textContent = bad.size ? "Vérification locale : chaîne cassée à l'événement " + ([...bad][0] + 1) + ". Attaque détectée." : "Vérification locale : tout a l'air correct… (mais est-ce vraiment le cas ?)";
+  });
+  $("v-hedera").addEventListener("click", async () => {
+    const bad = new Set(); let missing = 0;
+    ledger.forEach((l, k) => { const e = local[k]; if (!e) missing++; else if (e.h !== l.h || e.eh !== l.eh) bad.add(k); });
+    drawChain(bad);
+    verdict.hidden = false;
+    const ok = !bad.size && !missing;
+    verdict.className = "verdict " + (ok ? "ok" : "bad");
+    verdict.textContent = ok ? "PROOF VERIFIED : la base locale correspond exactement aux preuves sur Hedera." : "TAMPERING DETECTED : " + (bad.size ? bad.size + " événement(s) ne correspondent plus à Hedera" : "") + (bad.size && missing ? " et " : "") + (missing ? missing + " événement(s) prouvé(s) sur Hedera ont disparu de la base" : "") + ".";
+  });
+  resetChain();
+
+  /* ---------- quiz ---------- */
+  const QZ = [
+    ["Au-dessus de la limite, qui peut faire partir l'argent du coffre ?", ["Kanawita tout seul", "Personne sans la signature de l'approbateur humain", "Claude"], 1, "Le coffre a une clé 2 sur 2. Kanawita prépare la transaction programmée (1 signature), mais seule la signature de l'approbateur la fait exécuter par Hedera."],
+    ["Que fait le vérificateur public ?", ["Il demande à notre serveur si tout va bien", "Ton navigateur lit Hedera lui-même et recalcule toutes les empreintes", "Il envoie un e-mail au jury"], 1, "Il ne fait pas confiance au serveur : il lit le Mirror Node depuis le navigateur et recalcule chaque SHA-256."],
+    ["Qu'est-ce qui change entre l'ONG et ACME ?", ["Les agents", "Le topic Hedera", "Seulement le fichier de règles (politique)"], 2, "Mêmes agents, même topic, mêmes preuves. Seule la politique change : 15 000 TND pour l'ONG, 6 000 TND pour ACME, et d'autres catégories."],
+    ["Qui décide si on paie ?", ["Claude (Lemhaf)", "3ases, avec des règles fixes", "Le site web"], 1, "C'est 3ases, du code sans IA. Claude ne fait que recommander, et Kanawita revérifie avant de payer."],
+    ["Qu'est-ce qu'on envoie sur Hedera pour chaque décision ?", ["Toute la facture et les noms", "Seulement des identifiants et des empreintes", "Rien, Hedera sert juste à payer"], 1, "Moins de 1 Ko : identifiants, type d'événement, empreintes, version des règles, heure. Aucune donnée personnelle ni prix."],
+    ["Un initié modifie le prix ET recalcule toutes les empreintes. Qui le voit ?", ["La vérification locale", "Personne", "La vérification contre Hedera"], 2, "Localement la chaîne a l'air parfaite. Mais la copie sur Hedera ne peut pas être modifiée : la comparaison donne TAMPERING DETECTED."],
+    ["Que veut dire le badge DETERMINISTIC ?", ["Résultat calculé par du code fixe, sans IA", "Résultat de Claude", "Paiement confirmé"], 0, "Mêmes données = même résultat, toujours. C'est le cas de Nasnes, 3ases et Kanawita."],
+    ["Que vaut 1 EJTND, le jeton que Kanawita envoie ?", ["1 dollar", "1 HBAR", "1 dinar tunisien (jeton de test)"], 2, "EJTND est notre dinar de test sur Hedera : 12 450 TND d'offre = 12 450 EJTND payés. Il n'a pas de valeur réelle."],
+    ["La mission est BLOCKED. Un opérateur peut-il l'approuver ?", ["Oui, avec le PIN", "Non, jamais", "Oui, si Claude est d'accord"], 1, "La validation humaine ne sert que pour les cas HUMAN REVIEW. Un blocage ne se contourne pas."],
+    ["À quoi sert le Mirror Node ?", ["À envoyer les paiements", "À relire l'historique Hedera gratuitement pour vérifier", "À héberger le site"], 1, "On écrit sur les nœuds Hedera, on relit sur le Mirror Node. HashScan utilise les mêmes données."],
+    ["Que se passe-t-il si on rejoue exactement le même paiement ?", ["Il est payé deux fois", "Il est refusé (HTTP 409) : toujours un seul paiement", "Le site plante"], 1, "Clé d'idempotence + contraintes uniques dans la base + Kanawita qui vérifie qu'aucun paiement n'existe déjà."],
+  ];
+  const qb = $("quizbox");
+  qb.innerHTML = QZ.map((q, k) => "<div class='q' data-k='" + k + "'><b>" + (k + 1) + ". " + q[0] + "</b><div class='opts'>" + q[1].map((o, j) => "<button type='button' class='opt' data-j='" + j + "'>" + o + "</button>").join("") + "</div><p class='fb' hidden></p></div>").join("");
+  qb.addEventListener("click", (e) => {
+    const b = e.target.closest("button.opt"); if (!b) return;
+    const box = b.closest(".q"); const q = QZ[+box.dataset.k]; const j = +b.dataset.j;
+    box.querySelectorAll("button.opt").forEach((x) => { x.classList.remove("right", "wrong"); if (+x.dataset.j === q[2]) x.classList.add("right"); });
+    if (j !== q[2]) b.classList.add("wrong");
+    const fb = box.querySelector(".fb"); fb.hidden = false; fb.textContent = (j === q[2] ? "Bravo. " : "Pas tout à fait. ") + q[3];
+  });
+})();
+</script>
+
+</html>

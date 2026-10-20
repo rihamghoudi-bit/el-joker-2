@@ -11,14 +11,43 @@ export type AgentName = z.infer<typeof AgentName>;
 export const ExecutionMode = z.enum(["REAL_AI", "FALLBACK", "DEMO_DATA", "DETERMINISTIC"]);
 export type ExecutionMode = z.infer<typeof ExecutionMode>;
 
-export const Currency = z.enum(["USD"]);
+/** Missions, offers, limits and payments are in Tunisian dinars (USD is kept for older records). */
+export const Currency = z.enum(["TND", "USD"]);
 export type Currency = z.infer<typeof Currency>;
+
+/** "12,450 TND" — dinars have 3 decimals (millimes); whole amounts are shown without decimals. */
+export const money = (n: number | null | undefined, currency: string = "TND"): string =>
+  n == null ? "—" : `${n.toLocaleString("en-US", { maximumFractionDigits: 3 })} ${currency}`;
 
 export const Urgency = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 export type Urgency = z.infer<typeof Urgency>;
 
-export const ItemCategory = z.enum(["WATER", "MEDICINE", "FOOD", "HYGIENE", "SHELTER", "ELECTRONICS", "OTHER"]);
+export const ItemCategory = z.enum(["WATER", "MEDICINE", "FOOD", "HYGIENE", "SHELTER", "ELECTRONICS", "OFFICE", "OTHER"]);
 export type ItemCategory = z.infer<typeof ItemCategory>;
+
+/**
+ * The organization a mission spends for. Each one has its own spending policy (rules, limits, regions, categories):
+ * the agents and the proof layer are the same, which is what makes EL JOKER a platform rather than a single app.
+ */
+export const OrganizationId = z.enum(["NGO_RELIEF", "ACME_PROCUREMENT"]);
+export type OrganizationId = z.infer<typeof OrganizationId>;
+
+export interface OrganizationInfo {
+  id: OrganizationId;
+  name: string;
+  shortName: string;
+  kind: string;
+  /** What the "beneficiaries" field counts for this organization. */
+  peopleLabel: string;
+}
+
+export const ORGANIZATIONS: Record<OrganizationId, OrganizationInfo> = {
+  NGO_RELIEF: { id: "NGO_RELIEF", name: "South Tunisia Relief Network (demo NGO)", shortName: "Relief NGO", kind: "Humanitarian NGO", peopleLabel: "people" },
+  ACME_PROCUREMENT: { id: "ACME_PROCUREMENT", name: "ACME Tunisia (demo company)", shortName: "ACME", kind: "Company procurement", peopleLabel: "employees" },
+};
+
+/** Missions stored before organizations existed belong to the NGO. */
+export const organizationOf = (m: { organizationId?: OrganizationId | null }): OrganizationId => m.organizationId ?? "NGO_RELIEF";
 
 export const MissionStatus = z.enum([
   "NEEDS_INFORMATION",
@@ -56,10 +85,12 @@ export const AuditEventType = z.enum([
   "HUMAN_REVIEW_REQUIRED",
   "HUMAN_APPROVED",
   "HUMAN_REJECTED",
+  "PAYMENT_SCHEDULED",
   "PAYMENT_INITIATED",
   "PAYMENT_CONFIRMED",
   "PAYMENT_FAILED",
   "PAYMENT_BLOCKED",
+  "PAYMENT_CANCELLED",
   "TAMPER_DETECTED",
 ]);
 export type AuditEventType = z.infer<typeof AuditEventType>;
@@ -89,10 +120,11 @@ export const MissionDraft = z.object({
   beneficiaries: z.number().int().positive().max(10_000_000),
   requestedItems: z.array(RequestedItem).min(1).max(20),
   maximumBudget: z.number().positive().max(100_000_000),
-  currency: Currency.default("USD"),
+  currency: Currency.default("TND"),
   deadline: z.string().datetime().optional(),
   urgency: Urgency.default("HIGH"),
   constraints: z.array(z.string().max(200)).max(10).default([]),
+  organizationId: OrganizationId.default("NGO_RELIEF"),
 });
 export type MissionDraft = z.infer<typeof MissionDraft>;
 export type MissionDraftInput = z.input<typeof MissionDraft>;
@@ -297,8 +329,19 @@ export const AuditEvent = z.object({
 });
 export type AuditEvent = z.infer<typeof AuditEvent>;
 
-export const PaymentStatus = z.enum(["INITIATED", "SUBMITTED", "CONFIRMED", "FAILED"]);
+/**
+ * SCHEDULED: locked on Hedera as a scheduled transfer from the multi-signature vault, waiting for the approver's signature.
+ * CANCELLED: that schedule was deleted on Hedera (human rejection); no funds moved.
+ */
+export const PaymentStatus = z.enum(["SCHEDULED", "INITIATED", "SUBMITTED", "CONFIRMED", "FAILED", "CANCELLED"]);
 export type PaymentStatus = z.infer<typeof PaymentStatus>;
+
+/** Payments that count as "money committed or moved" (a scheduled vault payment is reserved, not yet live). */
+export const isLivePayment = (p: { status: PaymentStatus }) => p.status === "INITIATED" || p.status === "SUBMITTED" || p.status === "CONFIRMED";
+
+/** Where the money comes from: the agent's own account (within the autonomous limit) or the 2-of-2 vault. */
+export const PaymentSource = z.enum(["OPERATOR", "VAULT"]);
+export type PaymentSource = z.infer<typeof PaymentSource>;
 
 export const Payment = z.object({
   paymentId: z.string(),
@@ -309,7 +352,15 @@ export const Payment = z.object({
   amount: z.number(),
   currency: Currency,
   settlementAmount: z.number(),
-  settlementCurrency: z.literal("HBAR"),
+  /** "HBAR" (scaled demo amount) or the HTS stablecoin symbol (full offer amount). */
+  settlementCurrency: z.string(),
+  /** HTS token id when settling in the stablecoin. */
+  settlementTokenId: z.string().nullable().optional(),
+  source: PaymentSource.optional(),
+  /** Hedera schedule holding a vault payment until the approver co-signs. */
+  scheduleId: z.string().nullable().optional(),
+  scheduleHashscanUrl: z.string().nullable().optional(),
+  vaultAccountId: z.string().nullable().optional(),
   payeeAccountId: z.string().nullable(),
   status: PaymentStatus,
   mode: LedgerMode,

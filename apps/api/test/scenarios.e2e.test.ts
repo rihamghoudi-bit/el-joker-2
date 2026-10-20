@@ -15,7 +15,7 @@ describe("Scenario A — approved mission", () => {
     expect(state.verification?.status).toBe("VERIFIED");
     expect(state.payments).toHaveLength(1);
     expect(state.payments[0]!.status).toBe("CONFIRMED");
-    expect(state.payments[0]!.settlementAmount).toBe(1.0375); // $4,150 / 1000 * 0.25 HBAR
+    expect(state.payments[0]!.settlementAmount).toBe(0.996); // 12,450 TND / 1000 * 0.08 HBAR
     expect(state.payments[0]!.hederaTransactionId).toBeNull(); // simulated ledger never invents tx ids
     expect(eventTypes(app, missionId)).toEqual(["MISSION_CREATED", "AI_RECOMMENDATION", "SUPPLIER_VERIFIED", "GUARDIAN_APPROVED", "PAYMENT_INITIATED", "PAYMENT_CONFIRMED"]);
     expect(state.auditEvents.every((e) => e.anchor.status === "SIMULATED")).toBe(true);
@@ -112,7 +112,11 @@ describe("Scenario E — high-risk human review", () => {
     expect(state.mission.status).toBe("HUMAN_REVIEW");
     expect(state.guardianDecision?.decision).toBe("HUMAN_REVIEW_REQUIRED");
     expect(state.guardianDecision?.riskLevel).toBe("HIGH");
-    expect(state.payments).toHaveLength(0);
+    // The payment is locked in the 2-of-2 vault: signed by the agents only, not executed.
+    expect(state.payments).toHaveLength(1);
+    const locked = state.payments[0]!;
+    expect(locked).toMatchObject({ status: "SCHEDULED", source: "VAULT" });
+    expect(await app.ledger.fetchSchedule(locked.scheduleId!)).toMatchObject({ executed: false, deleted: false, signatures: 1 });
 
     // KANAWITA cannot be tricked into paying before the human decides.
     const early = await app.missions.kanawita.execute(missionId, "AUTO");
@@ -128,8 +132,10 @@ describe("Scenario E — high-risk human review", () => {
     expect(after.guardianDecision?.decision).toBe("APPROVED");
     expect(after.guardianDecision?.approvalId).toBe(after.approvals[0]!.approvalId);
     expect(after.payments).toHaveLength(1);
+    expect(after.payments[0]).toMatchObject({ status: "CONFIRMED", source: "VAULT", scheduleId: locked.scheduleId });
+    expect(await app.ledger.fetchSchedule(locked.scheduleId!)).toMatchObject({ executed: true, signatures: 2 });
     expect(eventTypes(app, missionId)).toEqual([
-      "MISSION_CREATED", "AI_RECOMMENDATION", "SUPPLIER_VERIFIED", "HUMAN_REVIEW_REQUIRED", "PAYMENT_BLOCKED", "HUMAN_APPROVED", "GUARDIAN_APPROVED", "PAYMENT_INITIATED", "PAYMENT_CONFIRMED",
+      "MISSION_CREATED", "AI_RECOMMENDATION", "SUPPLIER_VERIFIED", "HUMAN_REVIEW_REQUIRED", "PAYMENT_SCHEDULED", "PAYMENT_BLOCKED", "HUMAN_APPROVED", "GUARDIAN_APPROVED", "PAYMENT_INITIATED", "PAYMENT_CONFIRMED",
     ]);
     await expect(app.missions.submitApproval(missionId, { decision: "APPROVED", reason: "second time", actorId: "ops-lead", pin: "0619" })).rejects.toThrow(/not awaiting human review/);
   });
@@ -142,8 +148,11 @@ describe("Scenario E — high-risk human review", () => {
     const s = app.missions.getState(missionId);
     expect(s.mission.status).toBe("REJECTED");
     expect(s.guardianDecision?.decision).toBe("BLOCKED");
-    expect(s.payments).toHaveLength(0);
+    // The vault schedule is deleted on the ledger: the funds are never released.
+    expect(s.payments.map((p) => p.status)).toEqual(["CANCELLED"]);
+    expect(await app.ledger.fetchSchedule(s.payments[0]!.scheduleId!)).toMatchObject({ executed: false, deleted: true });
     expect(eventTypes(app, missionId)).toContain("HUMAN_REJECTED");
+    expect(eventTypes(app, missionId).at(-1)).toBe("PAYMENT_CANCELLED");
   });
 });
 

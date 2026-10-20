@@ -39,7 +39,7 @@ export function quoteOffers(mission: Mission, suppliers: DemoSupplier[] = DEMO_S
       missionId: mission.missionId,
       items,
       totalPrice,
-      currency: "USD",
+      currency: "TND",
       deliveryTimeHours: s.deliveryHours,
       invoiceId,
       evidence,

@@ -6,6 +6,7 @@
  * (decisionId/evaluatedAt are attached by the caller, outside this function.)
  */
 import type { GuardianCheck, GuardianOutcome, ItemCategory, MissionStatus, RiskLevel, Urgency, VerificationStatus } from "@eljoker/shared";
+import { money } from "@eljoker/shared";
 import { hashCanonical, round2 } from "../../lib/canonical";
 import { type LoadedPolicy, normalizeRegion, riskAtLeast } from "./policy";
 
@@ -75,7 +76,6 @@ export function guardianInputHash(input: GuardianInput, policy: LoadedPolicy): s
 export function evaluate(input: GuardianInput, policy: LoadedPolicy, approval: ApprovalEvidence | null = null): GuardianResult {
   const checks: GuardianCheck[] = [];
   const add = (id: string, label: string, outcome: GuardianCheck["outcome"], detail: string) => checks.push({ id, label, outcome, detail });
-  const usd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 
   const { mission, offer, supplier, verification, ledger } = input;
   const riskFactors: string[] = [];
@@ -124,9 +124,9 @@ export function evaluate(input: GuardianInput, policy: LoadedPolicy, approval: A
     // 8. Budget
     const total = round2(offer.totalPrice);
     if (total > mission.maximumBudget) {
-      add("BUDGET", "Within mission budget", "BLOCK", `Offer ${usd(total)} exceeds budget ${usd(mission.maximumBudget)} by ${usd(round2(total - mission.maximumBudget))}`);
+      add("BUDGET", "Within mission budget", "BLOCK", `Offer ${money(total)} exceeds budget ${money(mission.maximumBudget)} by ${money(round2(total - mission.maximumBudget))}`);
     } else {
-      add("BUDGET", "Within mission budget", "PASS", `Offer ${usd(total)} ≤ budget ${usd(mission.maximumBudget)}`);
+      add("BUDGET", "Within mission budget", "PASS", `Offer ${money(total)} ≤ budget ${money(mission.maximumBudget)}`);
       if (total / mission.maximumBudget >= policy.budgetWarningRatio) {
         riskScore += w.nearBudget;
         riskFactors.push(`Offer uses ≥${Math.round(policy.budgetWarningRatio * 100)}% of budget`);
@@ -160,12 +160,12 @@ export function evaluate(input: GuardianInput, policy: LoadedPolicy, approval: A
     add("DUPLICATE_PAYMENT", "Duplicate payment", dup ? "BLOCK" : "PASS", dup ? (ledger.missionHasLivePayment ? "This mission already has a payment" : "Idempotency key already used") : "No prior payment for this mission");
 
     // 12. Transaction / autonomous limits
-    if (total > policy.maxTransactionUsd) add("TRANSACTION_LIMIT", "Transaction limit", "BLOCK", `${usd(total)} exceeds the hard limit ${usd(policy.maxTransactionUsd)}`);
-    else if (total > policy.autonomousLimitUsd) {
-      add("TRANSACTION_LIMIT", "Autonomous spending limit", "REVIEW", `${usd(total)} exceeds the autonomous limit ${usd(policy.autonomousLimitUsd)} — a human must decide`);
+    if (total > policy.maxTransaction) add("TRANSACTION_LIMIT", "Transaction limit", "BLOCK", `${money(total)} exceeds the hard limit ${money(policy.maxTransaction)}`);
+    else if (total > policy.autonomousLimit) {
+      add("TRANSACTION_LIMIT", "Autonomous spending limit", "REVIEW", `${money(total)} exceeds the autonomous limit ${money(policy.autonomousLimit)} — a human must decide`);
       riskScore += w.aboveAutonomousLimit;
       riskFactors.push("Above autonomous spending limit");
-    } else add("TRANSACTION_LIMIT", "Autonomous spending limit", "PASS", `${usd(total)} ≤ autonomous limit ${usd(policy.autonomousLimitUsd)}`);
+    } else add("TRANSACTION_LIMIT", "Autonomous spending limit", "PASS", `${money(total)} ≤ autonomous limit ${money(policy.autonomousLimit)}`);
 
     // Supplier risk flags contribute to risk
     for (const f of supplier.riskFlags) {
