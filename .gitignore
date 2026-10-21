@@ -18,3 +18,8 @@ apps/web/test-results/
 apps/web/playwright-report/
 test-results/
 playwright-report/
+
+# Local tooling, not part of the project
+.claude/
+apps/web/AGENTS.md
+apps/web/CLAUDE.md

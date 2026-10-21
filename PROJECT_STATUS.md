@@ -66,7 +66,7 @@ G recycled invoice from a verified supplier rejected (added after the code revie
 
 | Decision | Reason |
 |---|---|
-| New repo `C:\Projects\el-joker-2`, nothing reused from old TrustMesh code | Handoff requires a clean build |
+| New repo `C:\Projects\el-joker-2`, nothing reused from old TrustMesh code | The brief requires a clean build |
 | npm workspaces: `packages/shared` (Zod domain), `apps/api` (Express), `apps/web` (Next.js) | Clear web/api split, shared typed models |
 | SQLite via built-in `node:sqlite` | Persistent, zero native build step on Windows |
 | Polling (0.8–3 s, ETag-revalidated, payloads only on demand) instead of WebSockets | Simplest reliable live updates for a demo |
@@ -148,11 +148,11 @@ Until `HEDERA_TOPIC_ID` is set the app stays in clearly labeled SIMULATED mode (
 
 ## 7. Log
 
-- 2026-10-05: Read handoff pack (master prompt, PDF, 3 diagrams, references). Created repo and plan.
+- 2026-10-05: Requirements and the 3 target diagrams reviewed (now in `docs/diagrams/`). Created repo and plan.
 - 2026-10-05: Backend (agents, guardian, proof layer, payments) + 15 E2E tests. Commit 24a4854.
 - 2026-10-05: Next.js mission room, full test suite (76), demo-check, hedera:setup, testnet test. Fixed tsup stripping `node:` from `node:sqlite`. Commit ed48902.
 - 2026-10-05: README, ARCHITECTURE, DEMO docs.
-- 2026-10-05: `.env` created with Hedera account/key/payee. `hedera:setup` failed inside the Claude Code sandbox (gRPC DEADLINE_EXCEEDED; TCP 50211 blocked). Live testnet steps handed to the owner.
+- 2026-10-05: `.env` created with Hedera account/key/payee. `hedera:setup` failed inside a restricted development sandbox (gRPC DEADLINE_EXCEEDED; TCP 50211 blocked). Live testnet steps handed to the owner.
 - 2026-10-05: UI redesigns (glass slabs, landing + ChatGPT-style chat, mascots, English-only agent messages).
 - 2026-10-05: Code-review fixes §6: 90 API tests, 5 browser E2E, demo-check 8/8.
 - 2026-10-12: Owner created topic 0.0.11007004; `test:testnet` 2/2 on Hedera testnet; payment and proofs confirmed on Mirror Node and HashScan. Fixed `--payee` argument forwarding in the root `hedera:setup` script.

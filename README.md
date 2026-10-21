@@ -1,12 +1,14 @@
+<p align="center"><img src="apps/web/public/brand/eljoker-mark.png" alt="EL JOKER logo" width="120"></p>
+
 # EL JOKER 2.0 — 5ALIHA 3LINA
 
-**Team Chain619 · Hedera Hackathon** · *“Autonomous, but never uncontrolled.”*
+**Team Chain619 — Rihem Ghoudi & Mariem Souayh · Hedera Cross Campus Challenge 2026** · *“Autonomous, but never uncontrolled.”*
 
-**The control layer for AI agents that spend money.** AI agents are starting to buy, book and pay. EL JOKER lets an organization use one for its purchases without handing it the money: **one AI researcher recommends, four rule-based agents verify, decide and pay**, a human co-signs anything above the limit, and every decision is proven on Hedera.
+**The control layer for AI agents that spend money.** AI agents are starting to buy, book and pay. EL JOKER lets an organization use one for its purchases without handing it the money: **AI only reads and recommends; rule-based agents verify, decide and pay**, a human co-signs anything above the limit, and every decision is proven on Hedera.
 
 | Agent | Role | Property |
 |---|---|---|
-| **LEM3ALEM** | Coordinator / planner | Turns the request into a validated mission; never invents critical facts |
+| **LEM3ALEM** | Coordinator / planner | Turns the request into a validated mission (free text is read with Claude, rule-based fallback); never invents critical facts and decides nothing |
 | **LEMHAF** | AI research (Claude) | Ranks supplier offers and explains trade-offs — **recommends only** |
 | **NASNES** | Independent verifier | Deterministic checks of registry, evidence, arithmetic, invoices and the AI's own claims |
 | **3ASES** | Guardian | Versioned deterministic policy (one per organization) + risk engine. **No LLM.** |
@@ -193,7 +195,7 @@ el-joker-2/
 │     ├─ lib/              api client, useMissionControl hook, status, motion
 │     └─ e2e/              Playwright browser tests
 ├─ packages/shared/        Zod domain models, API contracts, canonical JSON + the browser-safe bundle verifier
-├─ docs/                   ARCHITECTURE.md, DEMO.md, pitch/, handoff/
+├─ docs/                   ARCHITECTURE.md, DEMO.md, SUBMISSION.md, pitch/, diagrams/
 ├─ .env.example
 └─ PROJECT_STATUS.md
 ```
@@ -205,6 +207,15 @@ el-joker-2/
 - Verified 2026-10-19: `npm run demo:check` 11/11 on testnet with real Claude (`claude-opus-5-5`): the 9 scenarios A–I, deleted-event detection and the independent public verifier, vault and EJTND included.
 - Example payment (scenario A, 12,450 EJTND): [HashScan](https://hashscan.io/testnet/transaction/1792450276.030571723) · example vault schedule, executed after the human co-signature (scenario E): [HashScan](https://hashscan.io/testnet/schedule/0.0.11090802).
 - Earlier run (2026-10-12, before the switch to dinars): `npm run test:testnet` 2/2, `demo:check` 8/8, payment of 1.0375 HBAR: [HashScan](https://hashscan.io/testnet/transaction/0.0.10569347-1791831141-287680039).
+
+## Team
+
+**Chain619** — built for the Hedera Cross Campus Challenge 2026.
+
+| Member | Role |
+|---|---|
+| **Rihem Ghoudi** | Product, agents and Hedera integration, live demo |
+| **Mariem Souayh** | Solution design, Hedera architecture and proofs, pitch |
 
 ## License
 
