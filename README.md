@@ -8,8 +8,8 @@
 
 | Agent | Role | Property |
 |---|---|---|
-| **LEM3ALEM** | Coordinator / planner | Turns the request into a validated mission (free text is read with Claude, rule-based fallback); never invents critical facts and decides nothing |
-| **LEMHAF** | AI research (Claude) | Ranks supplier offers and explains trade-offs — **recommends only** |
+| **LEM3ALEM** | Coordinator / planner | Turns the request into a validated mission ; never invents critical facts and decides nothing |
+| **LEMHAF** | AI research (Claude Opus 5.5) | Ranks supplier offers and explains trade-offs — **recommends only** |
 | **NASNES** | Independent verifier | Deterministic checks of registry, evidence, arithmetic, invoices and the AI's own claims |
 | **3ASES** | Guardian | Versioned deterministic policy (one per organization) + risk engine. **No LLM.** |
 | **KANAWITA** | Payment executor | Re-checks authorization itself; above the limit it can only *lock* money in the vault |
@@ -28,7 +28,7 @@
 
 ### One engine, any organization
 
-The agents and the proof layer are the same for every organization; only the **policy** changes. Two are included:
+The agents and the proof layer are the same for every organization; only the **policy** changes , so the code is ready . Two are included:
 
 | Organization | Policy | Autonomous limit | Allowed |
 |---|---|---|---|
@@ -81,7 +81,7 @@ Set `ANTHROPIC_API_KEY` (optionally `ANTHROPIC_MODEL`, default `claude-opus-5-5`
 ## Using the app
 
 1. **Landing** → *Go for EL JOKER* (or *Verify a mission yourself*).
-2. **Chat**: a ready-made request is already in the message box — press send (↑ or Enter). Chips **A–G** (relief NGO) and **H–I** (ACME) swap in another scenario; edited text is sent as a free-text mission (budgets in dinars; a budget written in dollars is converted at `TND_PER_USD`; text naming “ACME” goes to ACME's policy).
+2. **Chat**: a ready-made request is already in the message box  just for a test — press send (↑ or Enter). Chips **A–G** (relief NGO) and **H–I** (ACME) swap in another scenario; edited text is sent as a free-text mission (budgets in dinars; a budget written in dollars is converted at `TND_PER_USD`; text naming “ACME” goes to ACME's policy).
 3. Watch the agents talk; the right panel shows the key numbers, **Live Hedera proofs** and actions (*Verify against Hedera*, *Replay payment (attack)*, *Open the public verifier*).
 4. **Above the limit** (scenarios E and I): Kanawita locks the payment in the vault (**1 of 2 signatures**). An approval card appears — choose an operator, give a reason and enter the **operator PIN** (demo default **`0619`**, override with `DEMO_OPERATOR_PIN`). *Approve* adds the approver's signature and Hedera executes the transfer; *Reject* deletes the schedule.
 5. **Proof & verify** tab: *Verify against Hedera* → then *Simulate local tampering*, *Insider rewrites hashes too* or *Delete last event* → *Verify* again.
@@ -212,10 +212,10 @@ el-joker-2/
 
 **Chain619** — built for the Hedera Cross Campus Challenge 2026.
 
-| Member | Role |
+| Member | 
 |---|---|
-| **Rihem Ghoudi** | Product, agents and Hedera integration, live demo |
-| **Mariem Souayh** | Solution design, Hedera architecture and proofs, pitch |
+| **Rihem Ghoudi** |
+| **Mariem Souayh** | 
 
 ## License
 
