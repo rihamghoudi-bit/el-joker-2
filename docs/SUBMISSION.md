@@ -80,4 +80,4 @@ Suppliers and organizations are fictional (marked "demo"). EJTND is a test token
 - Source code: https://github.com/rihamghoudi-bit/el-joker-2
 - Pitch deck (PDF): https://github.com/rihamghoudi-bit/el-joker-2/blob/main/docs/pitch/EL_JOKER_Pitch_Deck.pdf
 - How to run the demo: README → Quick start; jury script in `docs/DEMO.md`
-- Demo video: _add the link once recorded (e.g. an unlisted YouTube video)_
+- Demo video: https://github.com/rihamghoudi-bit/el-joker-2/blob/main/docs/pitch/EL_JOKER_demo.mp4

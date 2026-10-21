@@ -35,7 +35,7 @@ The agents and the proof layer are the same for every organization; only the **p
 | **South Tunisia Relief Network** (demo NGO) | `policy.json` 2.1.0 | 15,000 TND | water, medicine, food, hygiene, shelter · southern regions |
 | **ACME Tunisia** (demo company) | `policy.acme.json` 1.1.0 | 6,000 TND | electronics, office supplies · Tunis, Sousse, Sfax |
 
-Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Jury demo script: [docs/DEMO.md](docs/DEMO.md) · Status & decisions: [PROJECT_STATUS.md](PROJECT_STATUS.md)
+Demo video: [docs/pitch/EL_JOKER_demo.mp4](docs/pitch/EL_JOKER_demo.mp4) · Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Jury demo script: [docs/DEMO.md](docs/DEMO.md) · Status & decisions: [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
 ---
 
