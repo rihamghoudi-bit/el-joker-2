@@ -108,7 +108,7 @@ export function ChatFeed({ state, footer }: { state: MissionState; footer?: Reac
                 </div>
                 <div
                   className={cx(
-                    "rounded-3xl px-5 py-4 text-left text-[15px] leading-relaxed",
+                    "rounded-3xl px-5 py-4 text-left text-[16px] leading-relaxed",
                     isOperator ? "rounded-tr-md" : "rounded-tl-md border",
                     isRequest
                       ? "bg-gradient-to-br from-[#6d5dff] to-[#4434e6] text-white shadow-[0_10px_40px_-12px_#5b4bff]"

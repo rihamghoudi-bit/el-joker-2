@@ -39,7 +39,7 @@ export function MissionControl() {
         </div>
       )}
 
-      <div className="mx-auto grid w-full max-w-[1680px] flex-1 gap-5 px-5 py-5 lg:grid-cols-[240px_minmax(0,1fr)] xl:min-h-0 xl:grid-cols-[240px_minmax(0,1fr)_400px]">
+      <div className="mx-auto grid w-full max-w-[1680px] flex-1 gap-5 px-5 py-5 lg:grid-cols-[240px_minmax(0,1fr)] xl:min-h-0 xl:grid-rows-1 xl:grid-cols-[220px_minmax(0,1fr)_340px]">
         <HistoryList missions={m.missions} activeId={m.activeId} onOpen={m.open} onNew={m.newChat} />
 
         {view === "conversation" || !state ? (
