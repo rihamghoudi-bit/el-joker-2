@@ -1,6 +1,6 @@
 <p align="center"><img src="apps/web/public/brand/eljoker-mark.png" alt="EL JOKER logo" width="120"></p>
 
-# EL JOKER 2.0 — 5ALIHA 3LINA
+# EL JOKER 
 
 **Team Chain619 — Rihem Ghoudi & Mariem Souayh · Hedera Cross Campus Challenge 2026** · *“Autonomous, but never uncontrolled.”*
 
